@@ -1,4 +1,4 @@
-package com.example.himatik_dss_mobile
+package com.ti4b.himatik_dss_mobile
 
 import io.flutter.embedding.android.FlutterActivity
 

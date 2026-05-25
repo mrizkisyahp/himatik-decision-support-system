@@ -1,0 +1,8 @@
+#!/bin/bash
+# Wrapper for fvm flutter to ensure consistent SDK and Java usage.
+
+# Set Java 21 environment for Android Gradle Plugin compatibility
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+export PATH=$JAVA_HOME/bin:$PATH
+
+fvm flutter "$@"
