@@ -10,6 +10,7 @@ class Candidate extends Model
 
     protected $fillable = [
         'user_id',
+        'candidate_type',  // 'staff' or 'bph'
         'nim',
         'prodi',
         'kelas',
@@ -18,8 +19,8 @@ class Candidate extends Model
         'second_choice_id',
         'recruitment_form_path',
         'photo_path',
-        'statement_letter_path',
-        'social_media_proof_path',
+        'statement_letter_path',    // nullable for BPH
+        'social_media_proof_path',  // nullable for BPH
         'status'
     ];
 

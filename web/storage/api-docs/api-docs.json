@@ -1,0 +1,57 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "HIMATIK DSS Recruitment API Documentation",
+        "description": "API endpoints for the HIMATIK Decision Support System (DSS) Staff Recruitment campaign.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://127.0.0.1:8000",
+            "description": "Local Development Server"
+        }
+    ],
+    "paths": {
+        "/api/landing": {
+            "get": {
+                "tags": [
+                    "Landing"
+                ],
+                "summary": "Get departments list",
+                "description": "Returns a database-driven list of departments/biros for the landing page.",
+                "operationId": "getLandingDepartments",
+                "responses": {
+                    "200": {
+                        "description": "Success response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "name": {
+                                                "type": "string",
+                                                "example": "Biro Humas"
+                                            },
+                                            "description": {
+                                                "type": "string",
+                                                "example": "Biro Hubungan Masyarakat..."
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Landing",
+            "description": "Landing"
+        }
+    ]
+}

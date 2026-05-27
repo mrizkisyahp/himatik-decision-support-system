@@ -9,7 +9,10 @@ class InterviewSchedule extends Model
     protected $table = 'interview_schedules';
 
     protected $fillable = [
-        'session_name', 'scheduled_at', 'location', 'candidate_id'
+        'session_name',
+        'scheduled_at',
+        'location',
+        'candidate_id'
     ];
 
     protected $casts = [
@@ -21,9 +24,9 @@ class InterviewSchedule extends Model
         return $this->belongsTo(Candidate::class);
     }
 
-    public function interviewer()
+    public function interviewers()
     {
         return $this->belongsToMany(User::class, 'interviewer_schedule');
     }
-    
+
 }

@@ -1,0 +1,114 @@
+name: Public
+description: ''
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/landing
+    metadata:
+      custom: []
+      groupName: Public
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Get Landing Page Departments'
+      description: |-
+        Returns a database-driven list of departments/biros displayed on the Flutter app landing page.
+        No authentication required.
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          [
+            {
+              "name": "Biro Humas",
+              "description": "Biro Hubungan Masyarakat bertanggung jawab atas komunikasi eksternal HIMATIK."
+            },
+            {
+              "name": "Biro Akademik",
+              "description": "Mengelola kegiatan akademik dan pengembangan ilmu anggota HIMATIK."
+            }
+          ]
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/announcements
+    metadata:
+      custom: []
+      groupName: Public
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Get Accepted Candidates List'
+      description: |-
+        Returns a public list of accepted candidates with their assigned department.
+        Only returns data when announcements have been published by the admin.
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "is_published": true,
+            "data": [
+              {
+                "nama": "Ahmad Rizki",
+                "nim": "2211501234",
+                "prodi": "Teknik Informatika",
+                "assigned_department": "Biro Humas"
+              }
+            ]
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "is_published": false,
+            "data": []
+          }
+        headers: []
+        description: 'Not yet published'
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null

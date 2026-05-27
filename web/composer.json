@@ -15,8 +15,9 @@
         "laravel/tinker": "^3.0"
     },
     "require-dev": {
-        "darkaonline/l5-swagger": "*",
+        "darkaonline/l5-swagger": "^11.0",
         "fakerphp/faker": "^1.23",
+        "knuckleswtf/scribe": "^5.10",
         "laravel/boost": "^2.2",
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",

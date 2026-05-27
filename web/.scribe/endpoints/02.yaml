@@ -1,0 +1,499 @@
+name: Candidate
+description: ''
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/departments
+    metadata:
+      custom: []
+      groupName: Candidate
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Get Departments List'
+      description: 'Returns all available departments/biros for candidates to select as their recruitment preferences.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "data": [
+              {"id": 1, "name": "Biro Humas", "description": "Biro Hubungan Masyarakat"},
+              {"id": 2, "name": "Biro Akademik", "description": "Mengelola kegiatan akademik"}
+            ]
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/register
+    metadata:
+      custom: []
+      groupName: Candidate
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Register Candidate'
+      description: |-
+        Register a new candidate account. Accepts `multipart/form-data` due to file uploads.
+        On success, returns a Sanctum token so the candidate is immediately logged in.
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: multipart/form-data
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      candidate_type:
+        custom: []
+        name: candidate_type
+        description: 'Registration type. One of: `staff`, `bph`.'
+        required: true
+        example: staff
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      email:
+        custom: []
+        name: email
+        description: 'Candidate email. Must be unique.'
+        required: true
+        example: ahmad@student.pnj.ac.id
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      nama:
+        custom: []
+        name: nama
+        description: 'Full name.'
+        required: true
+        example: 'Ahmad Rizki'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      password:
+        custom: []
+        name: password
+        description: 'Min 8 chars.'
+        required: true
+        example: password123
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      nim:
+        custom: []
+        name: nim
+        description: 'Student ID number. Must be unique.'
+        required: true
+        example: '2211501234'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      prodi:
+        custom: []
+        name: prodi
+        description: 'Study program. One of: `Teknik Informatika`, `Teknik Multimedia dan Jaringan`, `Teknik Multimedia dan Digital`.'
+        required: true
+        example: 'Teknik Informatika'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      kelas:
+        custom: []
+        name: kelas
+        description: 'Class name.'
+        required: true
+        example: TI-2A
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      phone:
+        custom: []
+        name: phone
+        description: 'Phone number.'
+        required: true
+        example: '081234567890'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      first_choice_id:
+        custom: []
+        name: first_choice_id
+        description: 'Department ID for first choice.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      second_choice_id:
+        custom: []
+        name: second_choice_id
+        description: 'Department ID for second choice.'
+        required: true
+        example: 2
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      recruitment_form:
+        custom: []
+        name: recruitment_form
+        description: 'PDF file. Max 2MB.'
+        required: true
+        example: null
+        type: file
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      photo:
+        custom: []
+        name: photo
+        description: 'JPEG/PNG image. Max 1MB. Staff: kemeja putih BG biru. BPH: jaket TIK BG biru.'
+        required: true
+        example: null
+        type: file
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      password_confirmation:
+        custom: []
+        name: password_confirmation
+        description: 'Must match password.'
+        required: true
+        example: password123
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      statement_letter:
+        custom: []
+        name: statement_letter
+        description: 'for staff only. PDF or image. Max 2MB.'
+        required: true
+        example: null
+        type: file
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      social_media_proof:
+        custom: []
+        name: social_media_proof
+        description: 'for staff only. Screenshot image (JPEG/PNG). Max 2MB.'
+        required: true
+        example: null
+        type: file
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      candidate_type: staff
+      email: ahmad@student.pnj.ac.id
+      nama: 'Ahmad Rizki'
+      password: password123
+      nim: '2211501234'
+      prodi: 'Teknik Informatika'
+      kelas: TI-2A
+      phone: '081234567890'
+      first_choice_id: 1
+      second_choice_id: 2
+      password_confirmation: password123
+    fileParameters:
+      recruitment_form: null
+      photo: null
+      statement_letter: null
+      social_media_proof: null
+    responses:
+      -
+        custom: []
+        status: 201
+        content: |-
+          {
+            "success": true,
+            "message": "Account and candidate profile successfully registered!",
+            "token": "2|xyz789...",
+            "candidate": {
+              "id": 1,
+              "nim": "2211501234",
+              "prodi": "Teknik Informatika",
+              "status": "registered"
+            }
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "The nim has already been taken.",
+            "errors": {"nim": ["The nim has already been taken."]}
+          }
+        headers: []
+        description: 'Validation Error'
+      -
+        custom: []
+        status: 500
+        content: |-
+          {
+            "success": false,
+            "message": "Registration failed. Please try again.",
+            "error": "..."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/me
+    metadata:
+      custom: []
+      groupName: Candidate
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Get Candidate Profile, Schedule & Results'
+      description: |-
+        Returns the authenticated user's profile info, including their candidate details (choices),
+        booked interview schedule slot, and final announcement outcome & DSS score breakdown if published.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_SANCTUM_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "user": {"id": 1, "name": "Ahmad Rizki", "email": "candidate@himatik.ac.id", "role": "candidate"},
+            "candidate": {"id": 1, "nim": "2211501234", "first_choice": {"name": "Biro Humas"}, "second_choice": {"name": "Biro Akademik"}, "status": "evaluated"},
+            "schedule": {"id": 3, "session_name": "Sesi Pagi A", "scheduled_at": "2025-08-15T09:00:00Z", "location": "Ruang Rapat HIMATIK"},
+            "announcement": {"id": 1, "candidate_id": 1, "status": "accepted", "assigned_department_id": 1, "is_published": true},
+            "dss_results": {"total_score": 4.5, "ncf": 4.67, "nsf": 4.25, "breakdown": []}
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/schedules
+    metadata:
+      custom: []
+      groupName: Candidate
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Get Available Interview Schedules'
+      description: 'Returns all available interview time slots, plus the currently booked slot (if any) for the authenticated candidate.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_SANCTUM_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "data": [
+              {
+                "id": 3,
+                "session_name": "Sesi Pagi A",
+                "scheduled_at": "2025-08-15T09:00:00.000000Z",
+                "location": "Ruang Rapat HIMATIK",
+                "candidate_id": null
+              }
+            ],
+            "current_booked_slot_id": null
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 404
+        content: |-
+          {
+            "success": false,
+            "message": "Candidate profile not found."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/schedules/book
+    metadata:
+      custom: []
+      groupName: Candidate
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Book Interview Schedule'
+      description: |-
+        Book or change the candidate's interview time slot. Automatically releases any previously booked slot.
+        Updates candidate status to `scheduled`.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_SANCTUM_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      schedule_id:
+        custom: []
+        name: schedule_id
+        description: 'ID of the schedule slot to book.'
+        required: true
+        example: 3
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      schedule_id: 3
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "Schedule successfully booked!",
+            "booked_slot": {
+              "id": 3,
+              "session_name": "Sesi Pagi A",
+              "scheduled_at": "2025-08-15T09:00:00.000000Z",
+              "location": "Ruang Rapat HIMATIK",
+              "candidate_id": 1
+            }
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 404
+        content: |-
+          {
+            "success": false,
+            "message": "Candidate profile not found."
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "success": false,
+            "message": "This slot has already been booked by another candidate."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null

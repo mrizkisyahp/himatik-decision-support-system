@@ -1,0 +1,195 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Candidate;
+use App\Models\Departmentsbiro;
+use App\Models\EvaluationCriteria;
+use App\Models\Evaluation;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+
+
+class InterviewerApiController extends Controller
+{
+    /**
+     * Get Interviewer's Schedules
+     *
+     * Returns all interview slots assigned to the currently logged-in interviewer,
+     * with candidate and department details. Accessible by both `interviewer` and `admin` roles.
+     *
+     * @group Interviewer
+     * @authenticated
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "session_name": "Sesi Pagi A",
+     *       "scheduled_at": "2025-08-15T09:00:00.000000Z",
+     *       "location": "Ruang Rapat HIMATIK",
+     *       "candidate": {
+     *         "id": 1,
+     *         "nim": "2211501234",
+     *         "user": {"name": "Ahmad Rizki", "email": "ahmad@student.pnj.ac.id"}
+     *       }
+     *     }
+     *   ]
+     * }
+     * @response 403 {
+     *   "success": false,
+     *   "message": "Unauthorized. Only interviewers/admins can access."
+     * }
+     */
+    public function getSchedules(Request $request)
+    {
+        $interviewer = $request->user();
+
+        if ($interviewer->role !== 'interviewer' && $interviewer->role !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only interviewers/admins can access.'
+            ], 403);
+        }
+
+        $schedules = $interviewer->interviewSchedules()
+            ->with(['candidate.user', 'candidate.firstChoice', 'candidate.secondChoice'])
+            ->orderBy('scheduled_at', 'asc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $schedules
+        ]);
+    }
+
+    /**
+     * Get Grading Details
+     *
+     * Returns evaluation criteria and existing scores for a specific candidate and department pair.
+     * Used by the Flutter app to pre-fill the grading form.
+     *
+     * @group Interviewer
+     * @authenticated
+     *
+     * @urlParam candidate integer required The candidate ID. Example: 1
+     * @urlParam department integer required The department/biro ID. Example: 2
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "candidate": {"id": 1, "nim": "2211501234", "user": {"name": "Ahmad Rizki"}},
+     *   "department": {"id": 2, "name": "Biro Akademik"},
+     *   "criteria": [
+     *     {"id": 1, "name": "Motivasi", "weight": 0.3},
+     *     {"id": 2, "name": "Kemampuan Komunikasi", "weight": 0.3}
+     *   ],
+     *   "existing_scores": {"1": 4, "2": 3}
+     * }
+     * @response 400 {
+     *   "success": false,
+     *   "message": "Candidate did not choose this department."
+     * }
+     */
+    public function getGradingDetails(Request $request, Candidate $candidate, Departmentsbiro $department)
+    {
+        if ($candidate->first_choice_id !== $department->id && $candidate->second_choice_id !== $department->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Candidate did not choose this department.'
+            ], 400);
+        }
+
+        $criteria = EvaluationCriteria::where('department_id', $department->id)->get();
+
+        $existingScores = Evaluation::where('candidate_id', $candidate->id)
+            ->where('department_id', $department->id)
+            ->select('criteria_id', 'score')
+            ->get()
+            ->pluck('score', 'criteria_id');
+
+        return response()->json([
+            'success' => true,
+            'candidate' => $candidate->load('user'),
+            'department' => $department,
+            'criteria' => $criteria,
+            'existing_scores' => $existingScores
+        ]);
+    }
+
+    /**
+     * Submit Evaluation Scores
+     *
+     * Save or update consensus scores for a candidate per department criteria.
+     * Scores must be integers from 1–5. Updates candidate status to `evaluated`.
+     *
+     * @group Interviewer
+     * @authenticated
+     *
+     * @urlParam candidate integer required The candidate ID. Example: 1
+     * @urlParam department integer required The department/biro ID. Example: 2
+     *
+     * @bodyParam scores object required Key-value map of criteria_id → score (1–5). Example: {"1": 4, "2": 3, "3": 5}
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Consensus scores saved successfully!"
+     * }
+     * @response 422 scenario="Validation Error" {
+     *   "message": "The scores field is required.",
+     *   "errors": {"scores": ["The scores field is required."]}
+     * }
+     * @response 500 {
+     *   "success": false,
+     *   "message": "Failed to save scores.",
+     *   "error": "..."
+     * }
+     */
+    public function submitScores(Request $request, Candidate $candidate, Departmentsbiro $department)
+    {
+        $request->validate([
+            'scores' => 'required|array',
+            'scores.*' => 'required|integer|min:1|max:5',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            foreach ($request->scores as $criteriaId => $score) {
+                $criteriaExists = EvaluationCriteria::where('id', $criteriaId)
+                    ->where('department_id', $department->id)
+                    ->exists();
+                if (!$criteriaExists) {
+                    continue;
+                }
+                Evaluation::updateOrCreate(
+                    [
+                        'candidate_id' => $candidate->id,
+                        'department_id' => $department->id,
+                        'criteria_id' => $criteriaId,
+                    ],
+                    [
+                        'score' => $score,
+                        'interviewer_id' => $request->user()->id,
+                    ]
+                );
+            }
+            $candidate->update(['status' => 'evaluated']);
+            DB::commit();
+            return response()->json([
+                'success' => true,
+                'message' => 'Consensus scores saved successfully!'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save scores.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+}
