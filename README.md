@@ -117,8 +117,14 @@ php artisan storage:link
 ```
 
 ### 7. Start the Server
+Run the backend server:
 ```bash
 php artisan serve
+```
+
+For local development, also run the Vite asset watch server in a separate terminal to compile Tailwind CSS dynamically:
+```bash
+npm run dev
 ```
 
 ### 8. Access the Website
