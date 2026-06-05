@@ -79,6 +79,12 @@
                                                                                 <li class="tocify-item level-2" data-unique="authentication-POSTapi-logout">
                                 <a href="#authentication-POSTapi-logout">Logout</a>
                             </li>
+                                                                                <li class="tocify-item level-2" data-unique="authentication-POSTapi-email-verify-otp">
+                                <a href="#authentication-POSTapi-email-verify-otp">Verify Email OTP</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="authentication-POSTapi-email-resend-otp">
+                                <a href="#authentication-POSTapi-email-resend-otp">Resend Email OTP</a>
+                            </li>
                                                                         </ul>
                             </ul>
                     <ul id="tocify-header-candidate" class="tocify-header">
@@ -90,10 +96,13 @@
                                 <a href="#candidate-GETapi-departments">Get Departments List</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="candidate-POSTapi-register">
-                                <a href="#candidate-POSTapi-register">Register Candidate</a>
+                                <a href="#candidate-POSTapi-register">Register Candidate Account</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="candidate-GETapi-me">
                                 <a href="#candidate-GETapi-me">Get Candidate Profile, Schedule & Results</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="candidate-POSTapi-candidate-profile">
+                                <a href="#candidate-POSTapi-candidate-profile">Submit Candidate Profile</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="candidate-GETapi-schedules">
                                 <a href="#candidate-GETapi-schedules">Get Available Interview Schedules</a>
@@ -221,7 +230,7 @@
     </ul>
 
     <ul class="toc-footer" id="last-updated">
-        <li>Last updated: May 27, 2026</li>
+        <li>Last updated: June 1, 2026</li>
     </ul>
 </div>
 
@@ -328,23 +337,11 @@ print_r(json_decode((string) $body));</code></pre></div>
         &quot;id&quot;: 1,
         &quot;name&quot;: &quot;Ahmad Rizki&quot;,
         &quot;email&quot;: &quot;candidate@himatik.ac.id&quot;,
-        &quot;role&quot;: &quot;candidate&quot;
+        &quot;role&quot;: &quot;candidate&quot;,
+        &quot;email_verified&quot;: true
     },
-    &quot;candidate&quot;: {
-        &quot;id&quot;: 1,
-        &quot;nim&quot;: &quot;2211501234&quot;,
-        &quot;status&quot;: &quot;registered&quot;
-    }
-}</code>
- </pre>
-            <blockquote>
-            <p>Example response (422):</p>
-        </blockquote>
-                <pre>
-
-<code class="language-json" style="max-height: 300px;">{
-    &quot;success&quot;: false,
-    &quot;message&quot;: &quot;Credentials not found&quot;
+    &quot;candidate&quot;: null,
+    &quot;next_step&quot;: &quot;candidate_registration&quot;
 }</code>
  </pre>
     </span>
@@ -599,6 +596,338 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         </form>
 
+                    <h2 id="authentication-POSTapi-email-verify-otp">Verify Email OTP</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Verify the candidate user's email OTP and mark the email as verified.</p>
+
+<span id="example-requests-POSTapi-email-verify-otp">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:8000/api/email/verify-otp" \
+    --header "Authorization: Bearer {YOUR_SANCTUM_TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"otp\": \"123456\"
+}"
+</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/email/verify-otp"
+);
+
+const headers = {
+    "Authorization": "Bearer {YOUR_SANCTUM_TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "otp": "123456"
+};
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="php-example">
+    <pre><code class="language-php">$client = new \GuzzleHttp\Client();
+$url = 'http://localhost:8000/api/email/verify-otp';
+$response = $client-&gt;post(
+    $url,
+    [
+        'headers' =&gt; [
+            'Authorization' =&gt; 'Bearer {YOUR_SANCTUM_TOKEN}',
+            'Content-Type' =&gt; 'application/json',
+            'Accept' =&gt; 'application/json',
+        ],
+        'json' =&gt; [
+            'otp' =&gt; '123456',
+        ],
+    ]
+);
+$body = $response-&gt;getBody();
+print_r(json_decode((string) $body));</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-email-verify-otp">
+            <blockquote>
+            <p>Example response (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;success&quot;: true,
+    &quot;message&quot;: &quot;Email verified successfully.&quot;,
+    &quot;redirect_to&quot;: &quot;landing&quot;,
+    &quot;next_step&quot;: &quot;candidate_registration&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-POSTapi-email-verify-otp" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-email-verify-otp"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-email-verify-otp"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-email-verify-otp" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-email-verify-otp">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-email-verify-otp" data-method="POST"
+      data-path="api/email/verify-otp"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-email-verify-otp', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-email-verify-otp"
+                    onclick="tryItOut('POSTapi-email-verify-otp');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-email-verify-otp"
+                    onclick="cancelTryOut('POSTapi-email-verify-otp');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-email-verify-otp"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/email/verify-otp</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-email-verify-otp"
+               value="Bearer {YOUR_SANCTUM_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_SANCTUM_TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-email-verify-otp"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-email-verify-otp"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>otp</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="otp"                data-endpoint="POSTapi-email-verify-otp"
+               value="123456"
+               data-component="body">
+    <br>
+<p>Six digit OTP code. Example: <code>123456</code></p>
+        </div>
+        </form>
+
+                    <h2 id="authentication-POSTapi-email-resend-otp">Resend Email OTP</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Send a new OTP to the authenticated candidate user's email.</p>
+
+<span id="example-requests-POSTapi-email-resend-otp">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:8000/api/email/resend-otp" \
+    --header "Authorization: Bearer {YOUR_SANCTUM_TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/email/resend-otp"
+);
+
+const headers = {
+    "Authorization": "Bearer {YOUR_SANCTUM_TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "POST",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="php-example">
+    <pre><code class="language-php">$client = new \GuzzleHttp\Client();
+$url = 'http://localhost:8000/api/email/resend-otp';
+$response = $client-&gt;post(
+    $url,
+    [
+        'headers' =&gt; [
+            'Authorization' =&gt; 'Bearer {YOUR_SANCTUM_TOKEN}',
+            'Content-Type' =&gt; 'application/json',
+            'Accept' =&gt; 'application/json',
+        ],
+    ]
+);
+$body = $response-&gt;getBody();
+print_r(json_decode((string) $body));</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-email-resend-otp">
+            <blockquote>
+            <p>Example response (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;success&quot;: true,
+    &quot;message&quot;: &quot;OTP sent successfully.&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-POSTapi-email-resend-otp" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-email-resend-otp"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-email-resend-otp"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-email-resend-otp" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-email-resend-otp">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-email-resend-otp" data-method="POST"
+      data-path="api/email/resend-otp"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-email-resend-otp', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-email-resend-otp"
+                    onclick="tryItOut('POSTapi-email-resend-otp');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-email-resend-otp"
+                    onclick="cancelTryOut('POSTapi-email-resend-otp');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-email-resend-otp"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/email/resend-otp</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-email-resend-otp"
+               value="Bearer {YOUR_SANCTUM_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_SANCTUM_TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-email-resend-otp"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-email-resend-otp"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
                 <h1 id="candidate">Candidate</h1>
 
     
@@ -751,13 +1080,13 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         </form>
 
-                    <h2 id="candidate-POSTapi-register">Register Candidate</h2>
+                    <h2 id="candidate-POSTapi-register">Register Candidate Account</h2>
 
 <p>
 </p>
 
-<p>Register a new candidate account. Accepts <code>multipart/form-data</code> due to file uploads.
-On success, returns a Sanctum token so the candidate is immediately logged in.</p>
+<p>Register a candidate account and send an email OTP. This endpoint only creates the user account.
+The candidate profile is submitted separately after OTP verification.</p>
 
 <span id="example-requests-POSTapi-register">
 <blockquote>Example request:</blockquote>
@@ -766,23 +1095,15 @@ On success, returns a Sanctum token so the candidate is immediately logged in.</
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
     "http://localhost:8000/api/register" \
-    --header "Content-Type: multipart/form-data" \
+    --header "Content-Type: application/json" \
     --header "Accept: application/json" \
-    --form "candidate_type=staff"\
-    --form "email=ahmad@student.pnj.ac.id"\
-    --form "nama=Ahmad Rizki"\
-    --form "password=password123"\
-    --form "nim=2211501234"\
-    --form "prodi=Teknik Informatika"\
-    --form "kelas=TI-2A"\
-    --form "phone=081234567890"\
-    --form "first_choice_id=1"\
-    --form "second_choice_id=2"\
-    --form "password_confirmation=password123"\
-    --form "recruitment_form=@C:\Users\Rizki\AppData\Local\Temp\phpA2A8.tmp" \
-    --form "photo=@C:\Users\Rizki\AppData\Local\Temp\phpA2A9.tmp" \
-    --form "statement_letter=@C:\Users\Rizki\AppData\Local\Temp\phpA2AA.tmp" \
-    --form "social_media_proof=@C:\Users\Rizki\AppData\Local\Temp\phpA2AB.tmp" </code></pre></div>
+    --data "{
+    \"email\": \"ahmad@student.pnj.ac.id\",
+    \"nama\": \"Ahmad Rizki\",
+    \"password\": \"password123\",
+    \"password_confirmation\": \"password123\"
+}"
+</code></pre></div>
 
 
 <div class="javascript-example">
@@ -791,31 +1112,21 @@ On success, returns a Sanctum token so the candidate is immediately logged in.</
 );
 
 const headers = {
-    "Content-Type": "multipart/form-data",
+    "Content-Type": "application/json",
     "Accept": "application/json",
 };
 
-const body = new FormData();
-body.append('candidate_type', 'staff');
-body.append('email', 'ahmad@student.pnj.ac.id');
-body.append('nama', 'Ahmad Rizki');
-body.append('password', 'password123');
-body.append('nim', '2211501234');
-body.append('prodi', 'Teknik Informatika');
-body.append('kelas', 'TI-2A');
-body.append('phone', '081234567890');
-body.append('first_choice_id', '1');
-body.append('second_choice_id', '2');
-body.append('password_confirmation', 'password123');
-body.append('recruitment_form', document.querySelector('input[name="recruitment_form"]').files[0]);
-body.append('photo', document.querySelector('input[name="photo"]').files[0]);
-body.append('statement_letter', document.querySelector('input[name="statement_letter"]').files[0]);
-body.append('social_media_proof', document.querySelector('input[name="social_media_proof"]').files[0]);
+let body = {
+    "email": "ahmad@student.pnj.ac.id",
+    "nama": "Ahmad Rizki",
+    "password": "password123",
+    "password_confirmation": "password123"
+};
 
 fetch(url, {
     method: "POST",
     headers,
-    body,
+    body: JSON.stringify(body),
 }).then(response =&gt; response.json());</code></pre></div>
 
 
@@ -826,70 +1137,14 @@ $response = $client-&gt;post(
     $url,
     [
         'headers' =&gt; [
-            'Content-Type' =&gt; 'multipart/form-data',
+            'Content-Type' =&gt; 'application/json',
             'Accept' =&gt; 'application/json',
         ],
-        'multipart' =&gt; [
-            [
-                'name' =&gt; 'candidate_type',
-                'contents' =&gt; 'staff'
-            ],
-            [
-                'name' =&gt; 'email',
-                'contents' =&gt; 'ahmad@student.pnj.ac.id'
-            ],
-            [
-                'name' =&gt; 'nama',
-                'contents' =&gt; 'Ahmad Rizki'
-            ],
-            [
-                'name' =&gt; 'password',
-                'contents' =&gt; 'password123'
-            ],
-            [
-                'name' =&gt; 'nim',
-                'contents' =&gt; '2211501234'
-            ],
-            [
-                'name' =&gt; 'prodi',
-                'contents' =&gt; 'Teknik Informatika'
-            ],
-            [
-                'name' =&gt; 'kelas',
-                'contents' =&gt; 'TI-2A'
-            ],
-            [
-                'name' =&gt; 'phone',
-                'contents' =&gt; '081234567890'
-            ],
-            [
-                'name' =&gt; 'first_choice_id',
-                'contents' =&gt; '1'
-            ],
-            [
-                'name' =&gt; 'second_choice_id',
-                'contents' =&gt; '2'
-            ],
-            [
-                'name' =&gt; 'password_confirmation',
-                'contents' =&gt; 'password123'
-            ],
-            [
-                'name' =&gt; 'recruitment_form',
-                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\phpA2A8.tmp', 'r')
-            ],
-            [
-                'name' =&gt; 'photo',
-                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\phpA2A9.tmp', 'r')
-            ],
-            [
-                'name' =&gt; 'statement_letter',
-                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\phpA2AA.tmp', 'r')
-            ],
-            [
-                'name' =&gt; 'social_media_proof',
-                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\phpA2AB.tmp', 'r')
-            ],
+        'json' =&gt; [
+            'email' =&gt; 'ahmad@student.pnj.ac.id',
+            'nama' =&gt; 'Ahmad Rizki',
+            'password' =&gt; 'password123',
+            'password_confirmation' =&gt; 'password123',
         ],
     ]
 );
@@ -906,39 +1161,16 @@ print_r(json_decode((string) $body));</code></pre></div>
 
 <code class="language-json" style="max-height: 300px;">{
     &quot;success&quot;: true,
-    &quot;message&quot;: &quot;Account and candidate profile successfully registered!&quot;,
+    &quot;message&quot;: &quot;Account created successfully. OTP sent to email.&quot;,
     &quot;token&quot;: &quot;2|xyz789...&quot;,
-    &quot;candidate&quot;: {
+    &quot;user&quot;: {
         &quot;id&quot;: 1,
-        &quot;nim&quot;: &quot;2211501234&quot;,
-        &quot;prodi&quot;: &quot;Teknik Informatika&quot;,
-        &quot;status&quot;: &quot;registered&quot;
-    }
-}</code>
- </pre>
-            <blockquote>
-            <p>Example response (422, Validation Error):</p>
-        </blockquote>
-                <pre>
-
-<code class="language-json" style="max-height: 300px;">{
-    &quot;message&quot;: &quot;The nim has already been taken.&quot;,
-    &quot;errors&quot;: {
-        &quot;nim&quot;: [
-            &quot;The nim has already been taken.&quot;
-        ]
-    }
-}</code>
- </pre>
-            <blockquote>
-            <p>Example response (500):</p>
-        </blockquote>
-                <pre>
-
-<code class="language-json" style="max-height: 300px;">{
-    &quot;success&quot;: false,
-    &quot;message&quot;: &quot;Registration failed. Please try again.&quot;,
-    &quot;error&quot;: &quot;...&quot;
+        &quot;name&quot;: &quot;Ahmad Rizki&quot;,
+        &quot;email&quot;: &quot;ahmad@student.pnj.ac.id&quot;,
+        &quot;role&quot;: &quot;candidate&quot;,
+        &quot;email_verified&quot;: false
+    },
+    &quot;next_step&quot;: &quot;verify_email&quot;
 }</code>
  </pre>
     </span>
@@ -960,7 +1192,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <form id="form-POSTapi-register" data-method="POST"
       data-path="api/register"
       data-authed="0"
-      data-hasfiles="1"
+      data-hasfiles="0"
       data-isarraybody="0"
       autocomplete="off"
       onsubmit="event.preventDefault(); executeTryOut('POSTapi-register', this);">
@@ -996,10 +1228,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="Content-Type"                data-endpoint="POSTapi-register"
-               value="multipart/form-data"
+               value="application/json"
                data-component="header">
     <br>
-<p>Example: <code>multipart/form-data</code></p>
+<p>Example: <code>application/json</code></p>
             </div>
                                 <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
@@ -1015,18 +1247,6 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                                 <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
         <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>candidate_type</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="candidate_type"                data-endpoint="POSTapi-register"
-               value="staff"
-               data-component="body">
-    <br>
-<p>Registration type. One of: <code>staff</code>, <code>bph</code>. Example: <code>staff</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>email</code></b>&nbsp;&nbsp;
 <small>string</small>&nbsp;
  &nbsp;
@@ -1063,102 +1283,6 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <p>Min 8 chars. Example: <code>password123</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>nim</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="nim"                data-endpoint="POSTapi-register"
-               value="2211501234"
-               data-component="body">
-    <br>
-<p>Student ID number. Must be unique. Example: <code>2211501234</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>prodi</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="prodi"                data-endpoint="POSTapi-register"
-               value="Teknik Informatika"
-               data-component="body">
-    <br>
-<p>Study program. One of: <code>Teknik Informatika</code>, <code>Teknik Multimedia dan Jaringan</code>, <code>Teknik Multimedia dan Digital</code>. Example: <code>Teknik Informatika</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>kelas</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="kelas"                data-endpoint="POSTapi-register"
-               value="TI-2A"
-               data-component="body">
-    <br>
-<p>Class name. Example: <code>TI-2A</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>phone</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="phone"                data-endpoint="POSTapi-register"
-               value="081234567890"
-               data-component="body">
-    <br>
-<p>Phone number. Example: <code>081234567890</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>first_choice_id</code></b>&nbsp;&nbsp;
-<small>integer</small>&nbsp;
- &nbsp;
- &nbsp;
-                <input type="number" style="display: none"
-               step="any"               name="first_choice_id"                data-endpoint="POSTapi-register"
-               value="1"
-               data-component="body">
-    <br>
-<p>Department ID for first choice. Example: <code>1</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>second_choice_id</code></b>&nbsp;&nbsp;
-<small>integer</small>&nbsp;
- &nbsp;
- &nbsp;
-                <input type="number" style="display: none"
-               step="any"               name="second_choice_id"                data-endpoint="POSTapi-register"
-               value="2"
-               data-component="body">
-    <br>
-<p>Department ID for second choice. Example: <code>2</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>recruitment_form</code></b>&nbsp;&nbsp;
-<small>file</small>&nbsp;
- &nbsp;
- &nbsp;
-                <input type="file" style="display: none"
-                              name="recruitment_form"                data-endpoint="POSTapi-register"
-               value=""
-               data-component="body">
-    <br>
-<p>PDF file. Max 2MB. Example: <code>C:\Users\Rizki\AppData\Local\Temp\phpA2A8.tmp</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>photo</code></b>&nbsp;&nbsp;
-<small>file</small>&nbsp;
- &nbsp;
- &nbsp;
-                <input type="file" style="display: none"
-                              name="photo"                data-endpoint="POSTapi-register"
-               value=""
-               data-component="body">
-    <br>
-<p>JPEG/PNG image. Max 1MB. Staff: kemeja putih BG biru. BPH: jaket TIK BG biru. Example: <code>C:\Users\Rizki\AppData\Local\Temp\phpA2A9.tmp</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>password_confirmation</code></b>&nbsp;&nbsp;
 <small>string</small>&nbsp;
  &nbsp;
@@ -1170,30 +1294,6 @@ You can check the Dev Tools console for debugging information.</code></pre>
     <br>
 <p>Must match password. Example: <code>password123</code></p>
         </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>statement_letter</code></b>&nbsp;&nbsp;
-<small>file</small>&nbsp;
- &nbsp;
- &nbsp;
-                <input type="file" style="display: none"
-                              name="statement_letter"                data-endpoint="POSTapi-register"
-               value=""
-               data-component="body">
-    <br>
-<p>for staff only. PDF or image. Max 2MB. Example: <code>C:\Users\Rizki\AppData\Local\Temp\phpA2AA.tmp</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>social_media_proof</code></b>&nbsp;&nbsp;
-<small>file</small>&nbsp;
- &nbsp;
- &nbsp;
-                <input type="file" style="display: none"
-                              name="social_media_proof"                data-endpoint="POSTapi-register"
-               value=""
-               data-component="body">
-    <br>
-<p>for staff only. Screenshot image (JPEG/PNG). Max 2MB. Example: <code>C:\Users\Rizki\AppData\Local\Temp\phpA2AB.tmp</code></p>
-        </div>
         </form>
 
                     <h2 id="candidate-GETapi-me">Get Candidate Profile, Schedule &amp; Results</h2>
@@ -1202,7 +1302,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <small class="badge badge-darkred">requires authentication</small>
 </p>
 
-<p>Returns the authenticated user's profile info, including their candidate details (choices),
+<p>Returns the authenticated user's profile info, candidate profile if it exists,
 booked interview schedule slot, and final announcement outcome &amp; DSS score breakdown if published.</p>
 
 <span id="example-requests-GETapi-me">
@@ -1265,38 +1365,14 @@ print_r(json_decode((string) $body));</code></pre></div>
         &quot;id&quot;: 1,
         &quot;name&quot;: &quot;Ahmad Rizki&quot;,
         &quot;email&quot;: &quot;candidate@himatik.ac.id&quot;,
-        &quot;role&quot;: &quot;candidate&quot;
+        &quot;role&quot;: &quot;candidate&quot;,
+        &quot;email_verified&quot;: true
     },
-    &quot;candidate&quot;: {
-        &quot;id&quot;: 1,
-        &quot;nim&quot;: &quot;2211501234&quot;,
-        &quot;first_choice&quot;: {
-            &quot;name&quot;: &quot;Biro Humas&quot;
-        },
-        &quot;second_choice&quot;: {
-            &quot;name&quot;: &quot;Biro Akademik&quot;
-        },
-        &quot;status&quot;: &quot;evaluated&quot;
-    },
-    &quot;schedule&quot;: {
-        &quot;id&quot;: 3,
-        &quot;session_name&quot;: &quot;Sesi Pagi A&quot;,
-        &quot;scheduled_at&quot;: &quot;2025-08-15T09:00:00Z&quot;,
-        &quot;location&quot;: &quot;Ruang Rapat HIMATIK&quot;
-    },
-    &quot;announcement&quot;: {
-        &quot;id&quot;: 1,
-        &quot;candidate_id&quot;: 1,
-        &quot;status&quot;: &quot;accepted&quot;,
-        &quot;assigned_department_id&quot;: 1,
-        &quot;is_published&quot;: true
-    },
-    &quot;dss_results&quot;: {
-        &quot;total_score&quot;: 4.5,
-        &quot;ncf&quot;: 4.67,
-        &quot;nsf&quot;: 4.25,
-        &quot;breakdown&quot;: []
-    }
+    &quot;candidate&quot;: null,
+    &quot;schedule&quot;: null,
+    &quot;announcement&quot;: null,
+    &quot;dss_results&quot;: null,
+    &quot;next_step&quot;: &quot;candidate_registration&quot;
 }</code>
  </pre>
     </span>
@@ -1384,6 +1460,594 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <p>Example: <code>application/json</code></p>
             </div>
                         </form>
+
+                    <h2 id="candidate-POSTapi-candidate-profile">Submit Candidate Profile</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Submit the verified candidate's full registration profile. Accepts <code>multipart/form-data</code>.</p>
+
+<span id="example-requests-POSTapi-candidate-profile">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:8000/api/candidate/profile" \
+    --header "Authorization: Bearer {YOUR_SANCTUM_TOKEN}" \
+    --header "Content-Type: multipart/form-data" \
+    --header "Accept: application/json" \
+    --form "candidate_type=staff"\
+    --form "nickname=Ahmad"\
+    --form "nim=2211501234"\
+    --form "prodi=Teknik Informatika"\
+    --form "kelas=TI-2A"\
+    --form "phone=081234567890"\
+    --form "address=architecto"\
+    --form "first_choice_id=1"\
+    --form "second_choice_id=2"\
+    --form "department_choice_reason=architecto"\
+    --form "weakness_description=architecto"\
+    --form "contribution_plan=architecto"\
+    --form "educations[]=architecto"\
+    --form "organizations[]=architecto"\
+    --form "committees[]=architecto"\
+    --form "skills[]=architecto"\
+    --form "facilities[]=architecto"\
+    --form "photo=@C:\Users\Rizki\AppData\Local\Temp\phpA4E9.tmp" \
+    --form "instagram_proof=@C:\Users\Rizki\AppData\Local\Temp\phpA4EA.tmp" \
+    --form "youtube_proof=@C:\Users\Rizki\AppData\Local\Temp\phpA4EB.tmp" \
+    --form "political_statement=@C:\Users\Rizki\AppData\Local\Temp\phpA4EC.tmp" \
+    --form "candidate_signature=@C:\Users\Rizki\AppData\Local\Temp\phpA4ED.tmp" \
+    --form "parent_signature=@C:\Users\Rizki\AppData\Local\Temp\phpA4EE.tmp" </code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/candidate/profile"
+);
+
+const headers = {
+    "Authorization": "Bearer {YOUR_SANCTUM_TOKEN}",
+    "Content-Type": "multipart/form-data",
+    "Accept": "application/json",
+};
+
+const body = new FormData();
+body.append('candidate_type', 'staff');
+body.append('nickname', 'Ahmad');
+body.append('nim', '2211501234');
+body.append('prodi', 'Teknik Informatika');
+body.append('kelas', 'TI-2A');
+body.append('phone', '081234567890');
+body.append('address', 'architecto');
+body.append('first_choice_id', '1');
+body.append('second_choice_id', '2');
+body.append('department_choice_reason', 'architecto');
+body.append('weakness_description', 'architecto');
+body.append('contribution_plan', 'architecto');
+body.append('educations[]', 'architecto');
+body.append('organizations[]', 'architecto');
+body.append('committees[]', 'architecto');
+body.append('skills[]', 'architecto');
+body.append('facilities[]', 'architecto');
+body.append('photo', document.querySelector('input[name="photo"]').files[0]);
+body.append('instagram_proof', document.querySelector('input[name="instagram_proof"]').files[0]);
+body.append('youtube_proof', document.querySelector('input[name="youtube_proof"]').files[0]);
+body.append('political_statement', document.querySelector('input[name="political_statement"]').files[0]);
+body.append('candidate_signature', document.querySelector('input[name="candidate_signature"]').files[0]);
+body.append('parent_signature', document.querySelector('input[name="parent_signature"]').files[0]);
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body,
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="php-example">
+    <pre><code class="language-php">$client = new \GuzzleHttp\Client();
+$url = 'http://localhost:8000/api/candidate/profile';
+$response = $client-&gt;post(
+    $url,
+    [
+        'headers' =&gt; [
+            'Authorization' =&gt; 'Bearer {YOUR_SANCTUM_TOKEN}',
+            'Content-Type' =&gt; 'multipart/form-data',
+            'Accept' =&gt; 'application/json',
+        ],
+        'multipart' =&gt; [
+            [
+                'name' =&gt; 'candidate_type',
+                'contents' =&gt; 'staff'
+            ],
+            [
+                'name' =&gt; 'nickname',
+                'contents' =&gt; 'Ahmad'
+            ],
+            [
+                'name' =&gt; 'nim',
+                'contents' =&gt; '2211501234'
+            ],
+            [
+                'name' =&gt; 'prodi',
+                'contents' =&gt; 'Teknik Informatika'
+            ],
+            [
+                'name' =&gt; 'kelas',
+                'contents' =&gt; 'TI-2A'
+            ],
+            [
+                'name' =&gt; 'phone',
+                'contents' =&gt; '081234567890'
+            ],
+            [
+                'name' =&gt; 'address',
+                'contents' =&gt; 'architecto'
+            ],
+            [
+                'name' =&gt; 'first_choice_id',
+                'contents' =&gt; '1'
+            ],
+            [
+                'name' =&gt; 'second_choice_id',
+                'contents' =&gt; '2'
+            ],
+            [
+                'name' =&gt; 'department_choice_reason',
+                'contents' =&gt; 'architecto'
+            ],
+            [
+                'name' =&gt; 'weakness_description',
+                'contents' =&gt; 'architecto'
+            ],
+            [
+                'name' =&gt; 'contribution_plan',
+                'contents' =&gt; 'architecto'
+            ],
+            [
+                'name' =&gt; 'educations[]',
+                'contents' =&gt; 'architecto'
+            ],
+            [
+                'name' =&gt; 'organizations[]',
+                'contents' =&gt; 'architecto'
+            ],
+            [
+                'name' =&gt; 'committees[]',
+                'contents' =&gt; 'architecto'
+            ],
+            [
+                'name' =&gt; 'skills[]',
+                'contents' =&gt; 'architecto'
+            ],
+            [
+                'name' =&gt; 'facilities[]',
+                'contents' =&gt; 'architecto'
+            ],
+            [
+                'name' =&gt; 'photo',
+                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\phpA4E9.tmp', 'r')
+            ],
+            [
+                'name' =&gt; 'instagram_proof',
+                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\phpA4EA.tmp', 'r')
+            ],
+            [
+                'name' =&gt; 'youtube_proof',
+                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\phpA4EB.tmp', 'r')
+            ],
+            [
+                'name' =&gt; 'political_statement',
+                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\phpA4EC.tmp', 'r')
+            ],
+            [
+                'name' =&gt; 'candidate_signature',
+                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\phpA4ED.tmp', 'r')
+            ],
+            [
+                'name' =&gt; 'parent_signature',
+                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\phpA4EE.tmp', 'r')
+            ],
+        ],
+    ]
+);
+$body = $response-&gt;getBody();
+print_r(json_decode((string) $body));</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-candidate-profile">
+            <blockquote>
+            <p>Example response (201):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;success&quot;: true,
+    &quot;message&quot;: &quot;Candidate profile registered successfully!&quot;,
+    &quot;candidate&quot;: {
+        &quot;id&quot;: 1,
+        &quot;nim&quot;: &quot;2211501234&quot;,
+        &quot;status&quot;: &quot;registered&quot;
+    },
+    &quot;next_step&quot;: &quot;schedule_selection&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-POSTapi-candidate-profile" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-candidate-profile"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-candidate-profile"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-candidate-profile" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-candidate-profile">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-candidate-profile" data-method="POST"
+      data-path="api/candidate/profile"
+      data-authed="1"
+      data-hasfiles="1"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-candidate-profile', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-candidate-profile"
+                    onclick="tryItOut('POSTapi-candidate-profile');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-candidate-profile"
+                    onclick="cancelTryOut('POSTapi-candidate-profile');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-candidate-profile"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/candidate/profile</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-candidate-profile"
+               value="Bearer {YOUR_SANCTUM_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_SANCTUM_TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-candidate-profile"
+               value="multipart/form-data"
+               data-component="header">
+    <br>
+<p>Example: <code>multipart/form-data</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-candidate-profile"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>candidate_type</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="candidate_type"                data-endpoint="POSTapi-candidate-profile"
+               value="staff"
+               data-component="body">
+    <br>
+<p>Registration type. One of: <code>staff</code>, <code>bph</code>. Example: <code>staff</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>nickname</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="nickname"                data-endpoint="POSTapi-candidate-profile"
+               value="Ahmad"
+               data-component="body">
+    <br>
+<p>Candidate nickname. Example: <code>Ahmad</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>nim</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="nim"                data-endpoint="POSTapi-candidate-profile"
+               value="2211501234"
+               data-component="body">
+    <br>
+<p>Exactly 10 digits and unique. Example: <code>2211501234</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>prodi</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="prodi"                data-endpoint="POSTapi-candidate-profile"
+               value="Teknik Informatika"
+               data-component="body">
+    <br>
+<p>Study program. Example: <code>Teknik Informatika</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>kelas</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="kelas"                data-endpoint="POSTapi-candidate-profile"
+               value="TI-2A"
+               data-component="body">
+    <br>
+<p>Class name. Example: <code>TI-2A</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>phone</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="phone"                data-endpoint="POSTapi-candidate-profile"
+               value="081234567890"
+               data-component="body">
+    <br>
+<p>Phone number. Example: <code>081234567890</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>address</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="address"                data-endpoint="POSTapi-candidate-profile"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>Full address. Example: <code>architecto</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>first_choice_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="first_choice_id"                data-endpoint="POSTapi-candidate-profile"
+               value="1"
+               data-component="body">
+    <br>
+<p>Department ID for first choice. Example: <code>1</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>second_choice_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="second_choice_id"                data-endpoint="POSTapi-candidate-profile"
+               value="2"
+               data-component="body">
+    <br>
+<p>optional Department ID for second choice. Must differ from first choice. Example: <code>2</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>department_choice_reason</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="department_choice_reason"                data-endpoint="POSTapi-candidate-profile"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>Combined reason for department choices. Example: <code>architecto</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>weakness_description</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="weakness_description"                data-endpoint="POSTapi-candidate-profile"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>Self-described weakness. Example: <code>architecto</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>contribution_plan</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="contribution_plan"                data-endpoint="POSTapi-candidate-profile"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>Concrete plan if selected. Example: <code>architecto</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>photo</code></b>&nbsp;&nbsp;
+<small>file</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="file" style="display: none"
+                              name="photo"                data-endpoint="POSTapi-candidate-profile"
+               value=""
+               data-component="body">
+    <br>
+<p>Candidate photo image. Example: <code>C:\Users\Rizki\AppData\Local\Temp\phpA4E9.tmp</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>instagram_proof</code></b>&nbsp;&nbsp;
+<small>file</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="file" style="display: none"
+                              name="instagram_proof"                data-endpoint="POSTapi-candidate-profile"
+               value=""
+               data-component="body">
+    <br>
+<p>Instagram follow proof image. Example: <code>C:\Users\Rizki\AppData\Local\Temp\phpA4EA.tmp</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>youtube_proof</code></b>&nbsp;&nbsp;
+<small>file</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="file" style="display: none"
+                              name="youtube_proof"                data-endpoint="POSTapi-candidate-profile"
+               value=""
+               data-component="body">
+    <br>
+<p>YouTube subscribe proof image. Example: <code>C:\Users\Rizki\AppData\Local\Temp\phpA4EB.tmp</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>political_statement</code></b>&nbsp;&nbsp;
+<small>file</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="file" style="display: none"
+                              name="political_statement"                data-endpoint="POSTapi-candidate-profile"
+               value=""
+               data-component="body">
+    <br>
+<p>Statement letter file. Example: <code>C:\Users\Rizki\AppData\Local\Temp\phpA4EC.tmp</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>candidate_signature</code></b>&nbsp;&nbsp;
+<small>file</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="file" style="display: none"
+                              name="candidate_signature"                data-endpoint="POSTapi-candidate-profile"
+               value=""
+               data-component="body">
+    <br>
+<p>Candidate signature image. Example: <code>C:\Users\Rizki\AppData\Local\Temp\phpA4ED.tmp</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>parent_signature</code></b>&nbsp;&nbsp;
+<small>file</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="file" style="display: none"
+                              name="parent_signature"                data-endpoint="POSTapi-candidate-profile"
+               value=""
+               data-component="body">
+    <br>
+<p>Parent signature image. Example: <code>C:\Users\Rizki\AppData\Local\Temp\phpA4EE.tmp</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>educations</code></b>&nbsp;&nbsp;
+<small>string[]</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="educations[0]"                data-endpoint="POSTapi-candidate-profile"
+               data-component="body">
+        <input type="text" style="display: none"
+               name="educations[1]"                data-endpoint="POSTapi-candidate-profile"
+               data-component="body">
+    <br>
+<p>optional Education rows.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>organizations</code></b>&nbsp;&nbsp;
+<small>string[]</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="organizations[0]"                data-endpoint="POSTapi-candidate-profile"
+               data-component="body">
+        <input type="text" style="display: none"
+               name="organizations[1]"                data-endpoint="POSTapi-candidate-profile"
+               data-component="body">
+    <br>
+<p>optional External organization rows.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>committees</code></b>&nbsp;&nbsp;
+<small>string[]</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="committees[0]"                data-endpoint="POSTapi-candidate-profile"
+               data-component="body">
+        <input type="text" style="display: none"
+               name="committees[1]"                data-endpoint="POSTapi-candidate-profile"
+               data-component="body">
+    <br>
+<p>optional Committee rows.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>skills</code></b>&nbsp;&nbsp;
+<small>string[]</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="skills[0]"                data-endpoint="POSTapi-candidate-profile"
+               data-component="body">
+        <input type="text" style="display: none"
+               name="skills[1]"                data-endpoint="POSTapi-candidate-profile"
+               data-component="body">
+    <br>
+<p>optional Skill rows.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>facilities</code></b>&nbsp;&nbsp;
+<small>string[]</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="facilities[0]"                data-endpoint="POSTapi-candidate-profile"
+               data-component="body">
+        <input type="text" style="display: none"
+               name="facilities[1]"                data-endpoint="POSTapi-candidate-profile"
+               data-component="body">
+    <br>
+<p>optional Facility rows.</p>
+        </div>
+        </form>
 
                     <h2 id="candidate-GETapi-schedules">Get Available Interview Schedules</h2>
 
@@ -1641,26 +2305,6 @@ print_r(json_decode((string) $body));</code></pre></div>
         &quot;location&quot;: &quot;Ruang Rapat HIMATIK&quot;,
         &quot;candidate_id&quot;: 1
     }
-}</code>
- </pre>
-            <blockquote>
-            <p>Example response (404):</p>
-        </blockquote>
-                <pre>
-
-<code class="language-json" style="max-height: 300px;">{
-    &quot;success&quot;: false,
-    &quot;message&quot;: &quot;Candidate profile not found.&quot;
-}</code>
- </pre>
-            <blockquote>
-            <p>Example response (422):</p>
-        </blockquote>
-                <pre>
-
-<code class="language-json" style="max-height: 300px;">{
-    &quot;success&quot;: false,
-    &quot;message&quot;: &quot;This slot has already been booked by another candidate.&quot;
 }</code>
  </pre>
     </span>

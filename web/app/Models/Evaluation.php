@@ -9,7 +9,13 @@ class Evaluation extends Model
     protected $table = 'evaluations';
 
     protected $fillable = [
-        'candidate_id', 'department_id', 'criteria_id', 'score', 'interviewer_id'
+        'candidate_id',
+        'department_id',
+        'criteria_id',
+        'score',
+        'notes',
+        'interviewer_id',
+        'version',
     ];
 
     public function candidate()

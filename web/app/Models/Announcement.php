@@ -26,4 +26,9 @@ class Announcement extends Model
     {
         return $this->belongsTo(Departmentsbiro::class, 'assigned_department_id');
     }
+
+    public function assignedDepartment()
+    {
+        return $this->belongsTo(Departmentsbiro::class, 'assigned_department_id');
+    }
 }

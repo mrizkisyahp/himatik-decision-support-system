@@ -56,7 +56,7 @@ class InterviewerApiController extends Controller
         }
 
         $schedules = $interviewer->interviewSchedules()
-            ->with(['candidate.user', 'candidate.firstChoice', 'candidate.secondChoice'])
+            ->with(['department', 'booking.candidate.user', 'booking.candidate.departmentChoices.department'])
             ->orderBy('scheduled_at', 'asc')
             ->get();
 
@@ -95,27 +95,34 @@ class InterviewerApiController extends Controller
      */
     public function getGradingDetails(Request $request, Candidate $candidate, Departmentsbiro $department)
     {
-        if ($candidate->first_choice_id !== $department->id && $candidate->second_choice_id !== $department->id) {
+        if (!$candidate->departmentChoices()->where('departmentsbiro_id', $department->id)->exists()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Candidate did not choose this department.'
             ], 400);
         }
 
-        $criteria = EvaluationCriteria::where('department_id', $department->id)->get();
+        $criteria = EvaluationCriteria::where('department_id', $department->id)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
 
         $existingScores = Evaluation::where('candidate_id', $candidate->id)
             ->where('department_id', $department->id)
-            ->select('criteria_id', 'score')
+            ->select('criteria_id', 'score', 'version')
             ->get()
-            ->pluck('score', 'criteria_id');
+            ->keyBy('criteria_id');
 
         return response()->json([
             'success' => true,
             'candidate' => $candidate->load('user'),
             'department' => $department,
             'criteria' => $criteria,
-            'existing_scores' => $existingScores
+            'existing_scores' => $existingScores->map(fn ($evaluation) => [
+                'score' => $evaluation->score,
+                'version' => $evaluation->version,
+            ])
         ]);
     }
 
@@ -164,17 +171,15 @@ class InterviewerApiController extends Controller
                 if (!$criteriaExists) {
                     continue;
                 }
-                Evaluation::updateOrCreate(
-                    [
-                        'candidate_id' => $candidate->id,
-                        'department_id' => $department->id,
-                        'criteria_id' => $criteriaId,
-                    ],
-                    [
-                        'score' => $score,
-                        'interviewer_id' => $request->user()->id,
-                    ]
-                );
+                $evaluation = Evaluation::firstOrNew([
+                    'candidate_id' => $candidate->id,
+                    'department_id' => $department->id,
+                    'criteria_id' => $criteriaId,
+                ]);
+                $evaluation->score = $score;
+                $evaluation->interviewer_id = $request->user()->id;
+                $evaluation->version = $evaluation->exists ? $evaluation->version + 1 : 1;
+                $evaluation->save();
             }
             $candidate->update(['status' => 'evaluated']);
             DB::commit();

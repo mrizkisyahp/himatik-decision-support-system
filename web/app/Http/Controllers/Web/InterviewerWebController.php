@@ -22,7 +22,7 @@ class InterviewerWebController extends Controller
         $schedules = collect();
         if ($interviewer) {
             $schedules = $interviewer->interviewSchedules()
-                ->with(['candidate.user', 'candidate.firstChoice', 'candidate.secondChoice'])
+                ->with(['department', 'booking.candidate.user', 'booking.candidate.departmentChoices.department'])
                 ->orderBy('scheduled_at', 'asc')
                 ->get();
         }
@@ -33,7 +33,11 @@ class InterviewerWebController extends Controller
     // Show grading form
     public function showGradingForm(Candidate $candidate, Departmentsbiro $department)
     {
-        $criteria = EvaluationCriteria::where('department_id', $department->id)->get();
+        $criteria = EvaluationCriteria::where('department_id', $department->id)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
 
         $existingScores = Evaluation::where('candidate_id', $candidate->id)
             ->where('department_id', $department->id)
@@ -63,17 +67,15 @@ class InterviewerWebController extends Controller
                     ->exists();
                 if (!$criteriaExists) continue;
 
-                Evaluation::updateOrCreate(
-                    [
-                        'candidate_id' => $candidate->id,
-                        'department_id' => $department->id,
-                        'criteria_id' => $criteriaId,
-                    ],
-                    [
-                        'score' => $score,
-                        'interviewer_id' => Auth::id(),
-                    ]
-                );
+                $evaluation = Evaluation::firstOrNew([
+                    'candidate_id' => $candidate->id,
+                    'department_id' => $department->id,
+                    'criteria_id' => $criteriaId,
+                ]);
+                $evaluation->score = $score;
+                $evaluation->interviewer_id = Auth::id();
+                $evaluation->version = $evaluation->exists ? $evaluation->version + 1 : 1;
+                $evaluation->save();
             }
             $candidate->update(['status' => 'evaluated']);
             DB::commit();

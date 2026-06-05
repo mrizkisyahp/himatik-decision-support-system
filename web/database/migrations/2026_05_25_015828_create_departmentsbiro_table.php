@@ -14,9 +14,13 @@ return new class extends Migration
         Schema::create('departmentsbiro', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique();
+            $table->string('slug')->unique();
             $table->text('description')->nullable();
-            $table->decimal('core_factor_weight', 3, 2)->default(0.60);
-            $table->decimal('secondary_factor_weight', 3, 2)->default(0.40);
+            $table->decimal('personal_aspect_weight', 5, 2)->default(60.00);
+            $table->decimal('organizational_aspect_weight', 5, 2)->default(40.00);
+            $table->decimal('core_factor_weight', 5, 2)->default(60.00);
+            $table->decimal('secondary_factor_weight', 5, 2)->default(40.00);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

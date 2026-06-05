@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('interview_schedules', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('department_id')->constrained('departmentsbiro')->onDelete('cascade');
             $table->string('session_name');
             $table->dateTime('scheduled_at');
             $table->string('location')->nullable();
-
-            $table->foreignId('candidate_id')->nullable()->unique()->constrained('candidates')->onDelete('set null');
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

@@ -13,11 +13,19 @@ return new class extends Migration {
         Schema::create('evaluation_criteria', function (Blueprint $table) {
             $table->id();
             $table->foreignId('department_id')->constrained('departmentsbiro')->onDelete('cascade');
+            $table->foreignId('default_criteria_id')->nullable()->constrained('default_evaluation_criteria')->nullOnDelete();
+            $table->string('code')->nullable();
             $table->string('name');
-            $table->enum('type', ['core', 'secondary']);
-            $table->integer('target_score')->default(3);
             $table->text('description')->nullable();
+            $table->enum('type', ['core', 'secondary']);
+            $table->enum('aspect', ['personal', 'organizational']);
+            $table->unsignedTinyInteger('target_score')->default(3);
+            $table->text('catatan')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->unsignedInteger('sort_order')->default(0);
             $table->timestamps();
+
+            $table->unique(['department_id', 'code']);
         });
     }
 

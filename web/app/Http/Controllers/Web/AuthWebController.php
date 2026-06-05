@@ -12,11 +12,10 @@ class AuthWebController extends Controller
 
     public function showLoginForm()
     {
-        /*
         if (Auth::check()) {
             return $this->redirectBasedOnRole(Auth::user());
         }
-        */
+
         return view('auth.login');
     }
 
@@ -54,6 +53,14 @@ class AuthWebController extends Controller
         } elseif ($user->role === 'interviewer') {
             return redirect()->route('interviewer.schedule');
         } elseif ($user->role === 'candidate') {
+            if (!$user->email_verified_at) {
+                return redirect()->route('candidate.otp.view');
+            }
+
+            if (!$user->candidate) {
+                return redirect()->route('candidate.register.view');
+            }
+
             return redirect()->route('candidate.schedule.view');
         }
 

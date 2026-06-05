@@ -5,134 +5,182 @@ namespace App\Services;
 use App\Models\Candidate;
 use App\Models\Departmentsbiro;
 use App\Models\Evaluation;
+use App\Models\SpkCalculationLog;
+use App\Models\SpkGapWeight;
+use App\Models\SpkResult;
+use Illuminate\Support\Facades\Auth;
 
 class ProfileMatchingService
 {
     public function mapToWeight(int $gap): float
     {
-        // Map difference (gap) to DSS weight value
-        return match ($gap) {
-            0 => 5.0,
-            1 => 4.5,
-            -1 => 4.0,
-            2 => 3.5,
-            -2 => 3.0,
-            3 => 2.5,
-            -3 => 2.0,
-            4 => 1.5,
-            -4 => 1.0,
-            default => 1.0,
-        };
+        return (float) SpkGapWeight::where('gap', $gap)->value('weight') ?: 1.0;
     }
 
-    // Calculate score for a single candidate in a department
-    public function calculateScore(Candidate $candidate, Departmentsbiro $department): array
+    public function calculateScore(Candidate $candidate, Departmentsbiro $department, ?int $calculatedBy = null): array
     {
-        // Get all evaluation criteria defined for this department
-        $criteriaList = $department->evaluationCriteria;
+        $startedAt = microtime(true);
+        $criteriaList = $department->evaluationCriteria()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
 
         if ($criteriaList->isEmpty()) {
-            return [
-                'total_score' => 0.0,
-                'ncf' => 0.0,
-                'nsf' => 0.0,
-                'breakdown' => [],
-            ];
+            return $this->emptyResult();
         }
 
-        // Get all scores submitted for this candidate in this department
         $evaluations = Evaluation::where('candidate_id', $candidate->id)
             ->where('department_id', $department->id)
             ->get()
             ->keyBy('criteria_id');
 
-        $coreFactorWeightsSum = 0.0;
-        $coreFactorCount = 0;
-
-        $secondaryFactorWeightsSum = 0.0;
-        $secondaryFactorCount = 0;
-
+        $gapWeights = SpkGapWeight::orderBy('gap')->get()->pluck('weight', 'gap');
+        $groups = [
+            'personal' => ['core' => [], 'secondary' => []],
+            'organizational' => ['core' => [], 'secondary' => []],
+        ];
         $breakdown = [];
 
-        // Loop through each criteria and calculate gaps
         foreach ($criteriaList as $criteria) {
-            // Get actual score (default to 0 if not evaluated yet)
-            $actualScore = isset($evaluations[$criteria->id]) ? $evaluations[$criteria->id]->score : 0;
-            $targetScore = $criteria->target_score;
-
-            // Gap calculation (actual - target)
+            $actualScore = (int) ($evaluations[$criteria->id]?->score ?? 0);
+            $targetScore = (int) $criteria->target_score;
             $gap = $actualScore - $targetScore;
+            $weight = (float) ($gapWeights[$gap] ?? 1.0);
 
-            // Map the gap to weight
-            $weight = $this->mapToWeight($gap);
-
-            // Group by core factor and secondary factor
-            if ($criteria->type === 'core') {
-                $coreFactorWeightsSum += $weight;
-                $coreFactorCount++;
-            } else {
-                $secondaryFactorWeightsSum += $weight;
-                $secondaryFactorCount++;
-            }
-
+            $groups[$criteria->aspect][$criteria->type][] = $weight;
             $breakdown[] = [
+                'criteria_id' => $criteria->id,
+                'code' => $criteria->code,
                 'criteria_name' => $criteria->name,
+                'aspect' => $criteria->aspect,
                 'criteria_type' => $criteria->type,
                 'actual_score' => $actualScore,
                 'target_score' => $targetScore,
                 'gap' => $gap,
-                'mapped_weight' => $weight,
+                'mapped_weight' => round($weight, 4),
             ];
-        } // <-- Loop ends here!
+        }
 
-        // Calculate averages (ncf & nsf) outside the loop
-        $ncf = $coreFactorCount > 0 ? ($coreFactorWeightsSum / $coreFactorCount) : 0.0;
-        $nsf = $secondaryFactorCount > 0 ? ($secondaryFactorWeightsSum / $secondaryFactorCount) : 0.0;
+        $personalCore = $this->average($groups['personal']['core']);
+        $personalSecondary = $this->average($groups['personal']['secondary']);
+        $organizationalCore = $this->average($groups['organizational']['core']);
+        $organizationalSecondary = $this->average($groups['organizational']['secondary']);
 
-        // Calculate final score using department-configured weights
-        $coreFactorWeight = $department->core_factor_weight;
-        $secondaryFactorWeight = $department->secondary_factor_weight;
+        $coreWeight = ((float) $department->core_factor_weight) / 100;
+        $secondaryWeight = ((float) $department->secondary_factor_weight) / 100;
+        $personalWeight = ((float) $department->personal_aspect_weight) / 100;
+        $organizationalWeight = ((float) $department->organizational_aspect_weight) / 100;
 
-        $totalScore = ($coreFactorWeight * $ncf) + ($secondaryFactorWeight * $nsf);
+        $personalScore = ($coreWeight * $personalCore) + ($secondaryWeight * $personalSecondary);
+        $organizationalScore = ($coreWeight * $organizationalCore) + ($secondaryWeight * $organizationalSecondary);
+        $finalScore = ($personalWeight * $personalScore) + ($organizationalWeight * $organizationalScore);
 
-        return [
-            'total_score' => round($totalScore, 2),
-            'ncf' => round($ncf, 2),
-            'nsf' => round($nsf, 2),
+        $result = [
+            'total_score' => round($finalScore, 4),
+            'final_score' => round($finalScore, 4),
+            'ncf' => round(($personalCore + $organizationalCore) / 2, 4),
+            'nsf' => round(($personalSecondary + $organizationalSecondary) / 2, 4),
+            'personal_core_score' => round($personalCore, 4),
+            'personal_secondary_score' => round($personalSecondary, 4),
+            'personal_score' => round($personalScore, 4),
+            'organizational_core_score' => round($organizationalCore, 4),
+            'organizational_secondary_score' => round($organizationalSecondary, 4),
+            'organizational_score' => round($organizationalScore, 4),
             'breakdown' => $breakdown,
+            'weights' => [
+                'personal_aspect_weight' => (float) $department->personal_aspect_weight,
+                'organizational_aspect_weight' => (float) $department->organizational_aspect_weight,
+                'core_factor_weight' => (float) $department->core_factor_weight,
+                'secondary_factor_weight' => (float) $department->secondary_factor_weight,
+            ],
+            'gap_weights' => $gapWeights->map(fn ($weight) => (float) $weight)->all(),
         ];
+
+        SpkResult::updateOrCreate(
+            [
+                'candidate_id' => $candidate->id,
+                'department_id' => $department->id,
+            ],
+            [
+                'final_score' => $result['final_score'],
+                'personal_core_score' => $result['personal_core_score'],
+                'personal_secondary_score' => $result['personal_secondary_score'],
+                'personal_score' => $result['personal_score'],
+                'organizational_core_score' => $result['organizational_core_score'],
+                'organizational_secondary_score' => $result['organizational_secondary_score'],
+                'organizational_score' => $result['organizational_score'],
+                'calculation_details' => $result,
+                'calculated_by' => $calculatedBy ?: Auth::id(),
+                'calculated_at' => now(),
+            ]
+        );
+
+        SpkCalculationLog::create([
+            'department_id' => $department->id,
+            'trigger_type' => 'manual',
+            'triggered_by' => $calculatedBy ?: Auth::id(),
+            'status' => 'success',
+            'candidates_count' => 1,
+            'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+        ]);
+
+        return $result;
     }
 
-    // Get ranked list of candidates for a specific department
     public function getDepartmentRankings(Departmentsbiro $department): array
     {
-        // Fetch candidates who applied for this department as Choice 1 or Choice 2
-        $candidates = Candidate::where('first_choice_id', $department->id)
-            ->orWhere('second_choice_id', $department->id)
-            ->get();
+        $candidates = Candidate::whereHas('departmentChoices', function ($query) use ($department) {
+            $query->where('departmentsbiro_id', $department->id);
+        })->with(['user', 'departmentChoices.department'])->get();
 
         $rankings = [];
 
         foreach ($candidates as $candidate) {
-            /**
-             * @var \App\Models\Candidate $candidate
-             */
             $scores = $this->calculateScore($candidate, $department);
-
             $rankings[] = [
                 'candidate' => $candidate,
                 'total_score' => $scores['total_score'],
+                'final_score' => $scores['final_score'],
                 'ncf' => $scores['ncf'],
                 'nsf' => $scores['nsf'],
+                'personal_score' => $scores['personal_score'],
+                'organizational_score' => $scores['organizational_score'],
                 'breakdown' => $scores['breakdown'],
             ];
         }
 
-        // Sort descending by total score
-        usort($rankings, function ($a, $b) {
-            return $b['total_score'] <=> $a['total_score'];
-        });
+        usort($rankings, fn ($a, $b) => $b['total_score'] <=> $a['total_score']);
+
+        foreach ($rankings as $index => $ranking) {
+            SpkResult::where('candidate_id', $ranking['candidate']->id)
+                ->where('department_id', $department->id)
+                ->update(['rank_position' => $index + 1]);
+            $rankings[$index]['rank_position'] = $index + 1;
+        }
 
         return $rankings;
+    }
+
+    private function average(array $values): float
+    {
+        return count($values) > 0 ? array_sum($values) / count($values) : 0.0;
+    }
+
+    private function emptyResult(): array
+    {
+        return [
+            'total_score' => 0.0,
+            'final_score' => 0.0,
+            'ncf' => 0.0,
+            'nsf' => 0.0,
+            'personal_core_score' => 0.0,
+            'personal_secondary_score' => 0.0,
+            'personal_score' => 0.0,
+            'organizational_core_score' => 0.0,
+            'organizational_secondary_score' => 0.0,
+            'organizational_score' => 0.0,
+            'breakdown' => [],
+        ];
     }
 }

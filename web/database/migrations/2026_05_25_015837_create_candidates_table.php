@@ -13,18 +13,22 @@ return new class extends Migration {
         Schema::create('candidates', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->unique()->constrained('users')->onDelete('cascade');
+            $table->enum('candidate_type', ['staff', 'bph'])->default('staff');
             $table->string('nim')->unique();
+            $table->string('nickname')->nullable();
             $table->enum('prodi', ['Teknik Informatika', 'Teknik Multimedia dan Jaringan', 'Teknik Multimedia dan Digital']);
             $table->string('kelas');
             $table->string('phone');
-
-            $table->foreignId('first_choice_id')->constrained('departmentsbiro')->onDelete('cascade');
-            $table->foreignId('second_choice_id')->constrained('departmentsbiro')->onDelete('cascade');
-
-            $table->string('recruitment_form_path');
+            $table->text('address')->nullable();
             $table->string('photo_path');
-            $table->string('statement_letter_path');
-            $table->string('social_media_proof_path');
+            $table->text('department_choice_reason')->nullable();
+            $table->text('weakness_description')->nullable();
+            $table->text('contribution_plan')->nullable();
+            $table->string('instagram_proof_path')->nullable();
+            $table->string('youtube_proof_path')->nullable();
+            $table->string('political_statement_path')->nullable();
+            $table->string('candidate_signature_path')->nullable();
+            $table->string('parent_signature_path')->nullable();
 
             $table->enum('status', ['registered', 'scheduled', 'evaluated', 'completed'])->default('registered');
             $table->timestamps();

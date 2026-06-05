@@ -65,23 +65,11 @@ endpoints:
               "id": 1,
               "name": "Ahmad Rizki",
               "email": "candidate@himatik.ac.id",
-              "role": "candidate"
+              "role": "candidate",
+              "email_verified": true
             },
-            "candidate": {
-              "id": 1,
-              "nim": "2211501234",
-              "status": "registered"
-            }
-          }
-        headers: []
-        description: ''
-      -
-        custom: []
-        status: 422
-        content: |-
-          {
-            "success": false,
-            "message": "Credentials not found"
+            "candidate": null,
+            "next_step": "candidate_registration"
           }
         headers: []
         description: ''
@@ -124,6 +112,110 @@ endpoints:
           {
             "success": true,
             "message": "Logged out successfully"
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/email/verify-otp
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Verify Email OTP'
+      description: "Verify the candidate user's email OTP and mark the email as verified."
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_SANCTUM_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      otp:
+        custom: []
+        name: otp
+        description: 'Six digit OTP code.'
+        required: true
+        example: '123456'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      otp: '123456'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "Email verified successfully.",
+            "redirect_to": "landing",
+            "next_step": "candidate_registration"
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/email/resend-otp
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Resend Email OTP'
+      description: "Send a new OTP to the authenticated candidate user's email."
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_SANCTUM_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "OTP sent successfully."
           }
         headers: []
         description: ''

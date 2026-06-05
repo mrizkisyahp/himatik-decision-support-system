@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Candidate;
 use App\Models\Departmentsbiro;
+use App\Models\DefaultEvaluationCriteria;
 use App\Models\EvaluationCriteria;
 use App\Models\InterviewSchedule;
 use App\Models\Announcement;
 use App\Models\User;
 use App\Services\ProfileMatchingService;
+use App\Support\SpkCriteriaDefaults;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -178,11 +180,19 @@ class AdminApiController extends Controller
         $request->validate([
             'name' => 'required|string|max:255|unique:departmentsbiro,name',
             'description' => 'nullable|string',
-            'core_factor_weight' => 'required|numeric|min:0|max:1',
-            'secondary_factor_weight' => 'required|numeric|min:0|max:1',
+            'slug' => 'nullable|string|max:255|unique:departmentsbiro,slug',
+            'personal_aspect_weight' => 'required|numeric|min:0|max:100',
+            'organizational_aspect_weight' => 'required|numeric|min:0|max:100',
+            'core_factor_weight' => 'required|numeric|min:0|max:100',
+            'secondary_factor_weight' => 'required|numeric|min:0|max:100',
+            'is_active' => 'sometimes|boolean',
         ]);
 
-        $department = Departmentsbiro::create($request->only('name', 'description', 'core_factor_weight', 'secondary_factor_weight'));
+        $department = Departmentsbiro::create([
+            ...$request->only('name', 'description', 'personal_aspect_weight', 'organizational_aspect_weight', 'core_factor_weight', 'secondary_factor_weight'),
+            'slug' => $request->slug ?: \Illuminate\Support\Str::slug($request->name),
+            'is_active' => $request->boolean('is_active', true),
+        ]);
 
         return response()->json(['success' => true, 'message' => 'Department created successfully!', 'data' => $department], 201);
     }
@@ -211,11 +221,19 @@ class AdminApiController extends Controller
         $request->validate([
             'name' => 'required|string|max:255|unique:departmentsbiro,name,' . $department->id,
             'description' => 'nullable|string',
-            'core_factor_weight' => 'required|numeric|min:0|max:1',
-            'secondary_factor_weight' => 'required|numeric|min:0|max:1',
+            'slug' => 'nullable|string|max:255|unique:departmentsbiro,slug,' . $department->id,
+            'personal_aspect_weight' => 'required|numeric|min:0|max:100',
+            'organizational_aspect_weight' => 'required|numeric|min:0|max:100',
+            'core_factor_weight' => 'required|numeric|min:0|max:100',
+            'secondary_factor_weight' => 'required|numeric|min:0|max:100',
+            'is_active' => 'sometimes|boolean',
         ]);
 
-        $department->update($request->only('name', 'description', 'core_factor_weight', 'secondary_factor_weight'));
+        $department->update([
+            ...$request->only('name', 'description', 'personal_aspect_weight', 'organizational_aspect_weight', 'core_factor_weight', 'secondary_factor_weight'),
+            'slug' => $request->slug ?: \Illuminate\Support\Str::slug($request->name),
+            'is_active' => $request->boolean('is_active', $department->is_active),
+        ]);
 
         return response()->json(['success' => true, 'message' => 'Department updated successfully!', 'data' => $department]);
     }
@@ -264,7 +282,7 @@ class AdminApiController extends Controller
     {
         if ($err = $this->requireAdmin($request)) return $err;
 
-        $schedules = InterviewSchedule::with(['candidate.user', 'interviewers'])->orderBy('scheduled_at')->get();
+        $schedules = InterviewSchedule::with(['department', 'booking.candidate.user', 'interviewers'])->orderBy('scheduled_at')->get();
 
         return response()->json(['success' => true, 'data' => $schedules]);
     }
@@ -291,16 +309,20 @@ class AdminApiController extends Controller
 
         $request->validate([
             'session_name' => 'required|string|max:255',
+            'department_id' => 'required|exists:departmentsbiro,id',
             'scheduled_at' => 'required|date',
             'location' => 'required|string|max:255',
+            'is_active' => 'sometimes|boolean',
             'interviewer_ids' => 'nullable|array',
             'interviewer_ids.*' => 'exists:users,id',
         ]);
 
         $schedule = InterviewSchedule::create([
+            'department_id' => $request->department_id,
             'session_name' => $request->session_name,
             'scheduled_at' => $request->scheduled_at,
             'location' => $request->location,
+            'is_active' => $request->boolean('is_active', true),
         ]);
 
         if ($request->interviewer_ids) {
@@ -333,16 +355,20 @@ class AdminApiController extends Controller
 
         $request->validate([
             'session_name' => 'required|string|max:255',
+            'department_id' => 'required|exists:departmentsbiro,id',
             'scheduled_at' => 'required|date',
             'location' => 'required|string|max:255',
+            'is_active' => 'sometimes|boolean',
             'interviewer_ids' => 'nullable|array',
             'interviewer_ids.*' => 'exists:users,id',
         ]);
 
         $schedule->update([
+            'department_id' => $request->department_id,
             'session_name' => $request->session_name,
             'scheduled_at' => $request->scheduled_at,
             'location' => $request->location,
+            'is_active' => $request->boolean('is_active', $schedule->is_active),
         ]);
 
         $schedule->interviewers()->sync($request->interviewer_ids ?? []);
@@ -394,7 +420,10 @@ class AdminApiController extends Controller
     {
         if ($err = $this->requireAdmin($request)) return $err;
 
-        $criteria = EvaluationCriteria::where('department_id', $department->id)->get();
+        $criteria = EvaluationCriteria::where('department_id', $department->id)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
 
         return response()->json(['success' => true, 'data' => $criteria]);
     }
@@ -423,16 +452,26 @@ class AdminApiController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|in:core,secondary',
+            'aspect' => 'required|in:personal,organizational',
             'target_score' => 'required|integer|min:1|max:5',
             'description' => 'nullable|string',
+            'code' => 'nullable|string|max:50',
+            'catatan' => 'nullable|string',
+            'is_active' => 'sometimes|boolean',
+            'sort_order' => 'nullable|integer|min:0',
         ]);
 
         $criterion = EvaluationCriteria::create([
             'department_id' => $department->id,
             'name' => $request->name,
+            'code' => $request->code,
             'type' => $request->type,
+            'aspect' => $request->aspect,
             'target_score' => $request->target_score,
             'description' => $request->description,
+            'catatan' => $request->catatan,
+            'is_active' => $request->boolean('is_active', true),
+            'sort_order' => $request->sort_order ?? 0,
         ]);
 
         return response()->json(['success' => true, 'message' => 'Criterion created successfully!', 'data' => $criterion], 201);
@@ -462,11 +501,20 @@ class AdminApiController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|in:core,secondary',
+            'aspect' => 'required|in:personal,organizational',
             'target_score' => 'required|integer|min:1|max:5',
             'description' => 'nullable|string',
+            'code' => 'nullable|string|max:50',
+            'catatan' => 'nullable|string',
+            'is_active' => 'sometimes|boolean',
+            'sort_order' => 'nullable|integer|min:0',
         ]);
 
-        $criterion->update($request->only('name', 'type', 'target_score', 'description'));
+        $criterion->update([
+            ...$request->only('name', 'code', 'type', 'aspect', 'target_score', 'description', 'catatan'),
+            'is_active' => $request->boolean('is_active', $criterion->is_active),
+            'sort_order' => $request->sort_order ?? $criterion->sort_order,
+        ]);
 
         return response()->json(['success' => true, 'message' => 'Criterion updated successfully!', 'data' => $criterion]);
     }
@@ -491,6 +539,32 @@ class AdminApiController extends Controller
         $criterion->delete();
 
         return response()->json(['success' => true, 'message' => 'Criterion deleted successfully.']);
+    }
+
+    public function resetCriteria(Request $request, Departmentsbiro $department)
+    {
+        if ($err = $this->requireAdmin($request)) return $err;
+
+        $department->evaluationCriteria()->delete();
+        DefaultEvaluationCriteria::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->each(function (DefaultEvaluationCriteria $default) use ($department) {
+                $department->evaluationCriteria()->create([
+                    'default_criteria_id' => $default->id,
+                    'code' => $default->code,
+                    'name' => $default->name,
+                    'description' => $default->description,
+                    'type' => $default->type,
+                    'aspect' => $default->aspect,
+                    'target_score' => SpkCriteriaDefaults::targetScoreFor($department->name, $default->code, $default->target_score),
+                    'catatan' => $default->catatan,
+                    'is_active' => true,
+                    'sort_order' => $default->sort_order,
+                ]);
+            });
+
+        return response()->json(['success' => true, 'message' => 'Criteria reset to defaults successfully.']);
     }
 
     // ─────────────────────────────────────────────────────────────────

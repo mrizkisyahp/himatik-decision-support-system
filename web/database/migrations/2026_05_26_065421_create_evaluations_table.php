@@ -17,8 +17,10 @@ return new class extends Migration
             $table->foreignId('department_id')->constrained('departmentsbiro')->onDelete('cascade');
             $table->foreignId('criteria_id')->constrained('evaluation_criteria')->onDelete('cascade');
             $table->integer('score');
+            $table->text('notes')->nullable();
 
             $table->foreignId('interviewer_id')->constrained('users')->onDelete('cascade');
+            $table->unsignedInteger('version')->default(1);
             $table->timestamps();
 
             $table->unique(['candidate_id', 'department_id', 'criteria_id'], 'candidate_dept_crit_unique');

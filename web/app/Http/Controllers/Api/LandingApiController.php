@@ -31,6 +31,9 @@ class LandingApiController extends Controller
     public function index()
     {
         // Return only the dynamic database-driven departments list (safe columns only) as pure raw JSON response
-        return response()->json(\App\Models\Departmentsbiro::select('name', 'description')->get());
+        return response()->json(Departmentsbiro::where('is_active', true)
+            ->select('name', 'description')
+            ->orderBy('name')
+            ->get());
     }
 }

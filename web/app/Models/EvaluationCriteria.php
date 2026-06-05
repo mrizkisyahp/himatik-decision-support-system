@@ -9,12 +9,31 @@ class EvaluationCriteria extends Model
     protected $table = 'evaluation_criteria';
 
     protected $fillable = [
-        'department_id', 'name', 'type', 'target_score', 'description'
+        'department_id',
+        'default_criteria_id',
+        'code',
+        'name',
+        'description',
+        'type',
+        'aspect',
+        'target_score',
+        'catatan',
+        'is_active',
+        'sort_order',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 
     public function department()
     {
         return $this->belongsTo(Departmentsbiro::class, 'department_id');
+    }
+
+    public function defaultCriteria()
+    {
+        return $this->belongsTo(DefaultEvaluationCriteria::class, 'default_criteria_id');
     }
 
     public function evaluations()
