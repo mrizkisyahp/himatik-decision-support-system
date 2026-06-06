@@ -12,6 +12,7 @@ class Departmentsbiro extends Model
         'name',
         'slug',
         'description',
+        'contact_person',
         'personal_aspect_weight',
         'organizational_aspect_weight',
         'core_factor_weight',
@@ -61,5 +62,20 @@ class Departmentsbiro extends Model
     public function spkResults()
     {
         return $this->hasMany(SpkResult::class, 'department_id');
+    }
+
+    public function workPrograms()
+    {
+        return $this->hasMany(DepartmentWorkProgram::class, 'department_id');
+    }
+
+    public function agendas()
+    {
+        return $this->hasMany(DepartmentAgenda::class, 'department_id');
+    }
+
+    public function openRecruitmentQuotas()
+    {
+        return $this->hasMany(OpenRecruitmentQuota::class, 'department_id');
     }
 }

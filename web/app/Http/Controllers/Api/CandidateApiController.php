@@ -10,6 +10,7 @@ use App\Models\InterviewSchedule;
 use App\Models\User;
 use App\Services\CandidateOtpService;
 use App\Services\CandidateProfileService;
+use App\Services\OpenRecruitmentService;
 use App\Support\CandidateProfileRules;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -165,7 +166,7 @@ class CandidateApiController extends Controller
      *   "next_step": "schedule_selection"
      * }
      */
-    public function storeProfile(Request $request, CandidateProfileService $profileService)
+    public function storeProfile(Request $request, CandidateProfileService $profileService, OpenRecruitmentService $openRecruitmentService)
     {
         $user = $request->user();
         if (!$user->email_verified_at) {
@@ -183,6 +184,13 @@ class CandidateApiController extends Controller
         }
 
         $validated = $request->validate(CandidateProfileRules::rules());
+
+        if (!$openRecruitmentService->isOpenFor($validated['candidate_type'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Open recruitment ' . strtoupper($validated['candidate_type']) . ' is currently closed.',
+            ], 422);
+        }
 
         DB::beginTransaction();
         try {

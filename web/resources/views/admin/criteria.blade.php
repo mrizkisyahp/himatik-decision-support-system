@@ -1,402 +1,274 @@
-@extends('layouts.admin')
-
-@section('title', 'Kriteria Evaluasi — ' . $department->name)
-@section('subtitle', 'Kelola bobot dan kriteria penilaian Profile Matching untuk department ini')
-
-@section('topbar-actions')
-    <a href="{{ route('admin.dashboard') }}" class="btn btn-ghost btn-sm">
-        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-        </svg>
-        Kembali
-    </a>
-    <button onclick="document.getElementById('add-criterion-modal').classList.remove('hidden')" class="btn btn-primary btn-sm">
-        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
-        </svg>
-        Tambah Kriteria
-    </button>
-@endsection
-
-@push('styles')
-<style>
-    .modal-backdrop {
-        position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 500;
-        display: flex; align-items: center; justify-content: center; padding: 16px;
-        backdrop-filter: blur(3px);
-    }
-    .modal-box {
-        background: white; border-radius: 14px; width: 100%; max-width: 540px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.2); overflow: hidden;
-        animation: modalSlide 0.25s cubic-bezier(0.34,1.56,0.64,1);
-    }
-    @keyframes modalSlide { from { transform:translateY(20px) scale(0.97); opacity:0; } to { transform:translateY(0) scale(1); opacity:1; } }
-    .modal-header { display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--color-border); }
-    .modal-title { font-size:15px; font-weight:700; color:var(--color-text-primary); }
-    .modal-close { width:28px; height:28px; border-radius:6px; background:#f1f5f9; border:none; cursor:pointer; color:var(--color-text-secondary); display:flex; align-items:center; justify-content:center; transition:all 0.15s; font-size:16px; }
-    .modal-close:hover { background:#fee2e2; color:#dc2626; }
-    .modal-body { padding:22px; max-height:75vh; overflow-y:auto; }
-    .modal-footer { display:flex; justify-content:flex-end; gap:8px; padding:14px 22px; border-top:1px solid var(--color-border); background:#fafafa; }
-
-    .form-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-    .form-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-
-    .dept-info-card {
-        background: linear-gradient(135deg, #ede9fe, #e0e7ff);
-        border-radius: 12px; padding: 20px;
-        border: 1px solid #c4b5fd;
-        margin-bottom: 24px;
-    }
-    .dept-stat { text-align: center; }
-    .dept-stat-value { font-size: 24px; font-weight: 800; color: #4338ca; }
-    .dept-stat-label { font-size: 11px; font-weight: 600; color: #6d28d9; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 2px; }
-
-    .criteria-chip-core { background:#e0e7ff; color:#3730a3; border:1px solid #c7d2fe; font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; }
-    .criteria-chip-secondary { background:#fef3c7; color:#92400e; border:1px solid #fde68a; font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; }
-    .criteria-chip-personal { background:#dbeafe; color:#1e40af; font-size:10px; font-weight:600; padding:2px 7px; border-radius:20px; }
-    .criteria-chip-organizational { background:#d1fae5; color:#065f46; font-size:10px; font-weight:600; padding:2px 7px; border-radius:20px; }
-    .criteria-code-badge {
-        font-size: 12px;
-        font-weight: 600;
-        background: #f1f5f9;
-        padding: 2px 7px;
-        border-radius: 5px;
-        color: var(--color-text-secondary);
-    }
-
-    .criteria-inactive { opacity: 0.55; }
-
-    .confirm-danger {
-        background: #fff1f2; border: 1px solid #fca5a5; border-radius: 10px;
-        padding: 14px 16px; font-size: 13px; color: #b91c1c; margin-top: 16px;
-        display: flex; align-items: flex-start; gap: 10px;
-    }
-</style>
-@endpush
+@extends('admin.layout', ['title' => "Kriteria - {$department->name}", 'hideStubBadge' => true])
 
 @section('content')
-
-    {{-- Department Info --}}
-    <div class="dept-info-card">
-        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
-            <div>
-                <div style="font-size:11px; font-weight:600; color:#6d28d9; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Department</div>
-                <div style="font-size:20px; font-weight:800; color:#3730a3;">{{ $department->name }}</div>
-                @if($department->description)
-                    <div style="font-size:13px; color:#5b21b6; margin-top:4px;">{{ $department->description }}</div>
-                @endif
+<div class="space-y-8" x-data="{
+    showAddModal: false,
+    showEditModal: false,
+    editData: {},
+    openEditModal(criterion) {
+        this.editData = criterion;
+        this.showEditModal = true;
+    }
+}">
+    {{-- Header --}}
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <a href="{{ route('admin.departments.manage', $department->id) }}" class="text-sm font-bold text-[#4A90E2] hover:underline">← Kembali ke Departemen</a>
             </div>
-            <div style="display:flex; gap:24px;">
-                <div class="dept-stat">
-                    <div class="dept-stat-value">{{ $department->core_factor_weight }}%</div>
-                    <div class="dept-stat-label">Core Factor</div>
-                </div>
-                <div class="dept-stat">
-                    <div class="dept-stat-value">{{ $department->secondary_factor_weight }}%</div>
-                    <div class="dept-stat-label">Secondary Factor</div>
-                </div>
-                <div class="dept-stat">
-                    <div class="dept-stat-value">{{ $criteria->count() }}</div>
-                    <div class="dept-stat-label">Total Kriteria</div>
-                </div>
-            </div>
+            <h1 class="text-2xl font-black tracking-tight text-[#111827]">Kriteria Evaluasi</h1>
+            <p class="text-sm text-[#64748B]">{{ $department->name }}</p>
         </div>
     </div>
+
+    @if(session('success'))
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
+            {{ session('success') }}
+        </div>
+    @endif
+    @if($errors->any())
+        <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800">
+            <ul class="list-disc pl-5">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    {{-- Bobot Settings Form --}}
+    <div class="rounded-2xl border border-[#D8E2F3] bg-white p-6 shadow-sm">
+        <h2 class="mb-4 font-bold text-[#111827] flex items-center gap-2">
+            <svg class="h-5 w-5 text-[#4A90E2]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+            Pengaturan Bobot Departemen
+        </h2>
+        <form action="{{ route('admin.departments.update', $department->id) }}" method="POST">
+            @csrf @method('PUT')
+            <input type="hidden" name="name" value="{{ $department->name }}">
+            <div class="grid gap-6 sm:grid-cols-2">
+                <div class="rounded-xl bg-[#F4F7FF] p-4 border border-[#D8E2F3]">
+                    <div class="mb-3 text-xs font-bold text-[#223872] uppercase tracking-wider">Aspek Utama (Total 100%)</div>
+                    <div class="flex gap-4">
+                        <div class="w-1/2">
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Personal (%)</label>
+                            <input type="number" step="0.01" name="personal_aspect_weight" value="{{ $department->personal_aspect_weight }}" class="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]">
+                        </div>
+                        <div class="w-1/2">
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Organizational (%)</label>
+                            <input type="number" step="0.01" name="organizational_aspect_weight" value="{{ $department->organizational_aspect_weight }}" class="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]">
+                        </div>
+                    </div>
+                </div>
+                <div class="rounded-xl bg-[#F4F7FF] p-4 border border-[#D8E2F3]">
+                    <div class="mb-3 text-xs font-bold text-[#223872] uppercase tracking-wider">Tipe Faktor (Total 100%)</div>
+                    <div class="flex gap-4">
+                        <div class="w-1/2">
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Core Factor (%)</label>
+                            <input type="number" step="0.01" name="core_factor_weight" value="{{ $department->core_factor_weight }}" class="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]">
+                        </div>
+                        <div class="w-1/2">
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Secondary Factor (%)</label>
+                            <input type="number" step="0.01" name="secondary_factor_weight" value="{{ $department->secondary_factor_weight }}" class="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <button type="submit" class="rounded-xl bg-[#4A90E2] px-6 py-2 text-sm font-bold text-white transition hover:bg-[#357ABD]">Simpan Bobot</button>
+            </div>
+        </form>
+    </div>
+
+    {{-- Alert Reset --}}
+    @if($isDirty)
+    <div class="flex flex-col gap-4 rounded-xl border border-amber-200 bg-amber-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-start gap-3">
+            <svg class="h-6 w-6 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <div>
+                <h3 class="font-bold text-amber-800">Kriteria Telah Dimodifikasi</h3>
+                <p class="mt-1 text-sm text-amber-700">Kriteria di departemen ini berbeda dari <i>Default Criteria</i> sistem. Jika ini tidak disengaja, Anda dapat meresetnya kembali ke bawaan.</p>
+            </div>
+        </div>
+        <form action="{{ route('admin.criteria.reset', $department->id) }}" method="POST" onsubmit="return confirm('Hapus semua kriteria kustom ini dan kembalikan ke setelan default sistem? TINDAKAN INI TIDAK BISA DIBATALKAN.')">
+            @csrf
+            <button type="submit" class="shrink-0 rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-700">Reset ke Default</button>
+        </form>
+    </div>
+    @endif
 
     {{-- Criteria Table --}}
-    <div class="admin-card" style="margin-bottom:20px;">
-        <div class="admin-card-header">
-            <div>
-                <div class="admin-card-title">Daftar Kriteria Penilaian</div>
-                <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">Diurutkan berdasarkan urutan dan tipe faktor</div>
-            </div>
-            <form action="{{ route('admin.criteria.reset', $department) }}" method="POST"
-                  onsubmit="return confirm('Reset semua kriteria ke default? Semua kriteria yang sudah dikustomisasi akan dihapus dan diganti dengan default.')">
-                @csrf
-                <button type="submit" class="btn btn-ghost btn-sm" style="color:#d97706; border-color:#fcd34d;">
-                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                    </svg>
-                    Reset ke Default
-                </button>
-            </form>
-        </div>
+    <div class="flex justify-end">
+        <button @click="showAddModal = true" class="inline-flex items-center gap-2 rounded-xl bg-[#223872] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#122452]">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Tambah Kriteria
+        </button>
+    </div>
 
-        @if($criteria->isEmpty())
-            <div class="empty-state">
-                <div class="empty-state-icon">
-                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
-                <div class="empty-state-title">Belum Ada Kriteria</div>
-                <div class="empty-state-desc">Tambahkan kriteria evaluasi atau reset ke kriteria default untuk memulai penilaian.</div>
-                <div style="margin-top:16px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-                    <button onclick="document.getElementById('add-criterion-modal').classList.remove('hidden')" class="btn btn-primary btn-sm">
-                        + Tambah Kriteria
-                    </button>
-                    <form action="{{ route('admin.criteria.reset', $department) }}" method="POST" onsubmit="return confirm('Reset ke kriteria default?')">
-                        @csrf
-                        <button type="submit" class="btn btn-ghost btn-sm">Reset ke Default</button>
-                    </form>
-                </div>
-            </div>
-        @else
-            <div style="overflow-x:auto;">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Kode</th>
-                            <th>Nama Kriteria</th>
-                            <th>Tipe Faktor</th>
-                            <th>Aspek</th>
-                            <th>Target Score</th>
-                            <th>Status</th>
-                            <th style="text-align:right;">Aksi</th>
+    <div class="rounded-2xl border border-[#D8E2F3] bg-white shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-gray-50 text-xs uppercase text-[#64748B] border-b border-[#D8E2F3]">
+                    <tr>
+                        <th class="px-6 py-4 font-bold">Code</th>
+                        <th class="px-6 py-4 font-bold">Kriteria</th>
+                        <th class="px-6 py-4 font-bold">Aspek</th>
+                        <th class="px-6 py-4 font-bold">Tipe (CF/SF)</th>
+                        <th class="px-6 py-4 font-bold text-center">Target Skor</th>
+                        <th class="px-6 py-4 font-bold text-right">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-[#D8E2F3]">
+                    @forelse($criteria as $c)
+                        <tr class="transition hover:bg-gray-50">
+                            <td class="px-6 py-4 font-mono text-gray-500">{{ $c->code ?? '-' }}</td>
+                            <td class="px-6 py-4">
+                                <div class="font-bold text-[#111827]">{{ $c->name }}</div>
+                                <div class="text-xs text-gray-500 mt-1 line-clamp-1">{{ $c->description ?? '-' }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold {{ $c->aspect === 'personal' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700' }}">
+                                    {{ ucfirst($c->aspect) }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold {{ $c->type === 'core' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700' }}">
+                                    {{ $c->type === 'core' ? 'Core Factor' : 'Secondary Factor' }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-center font-black text-lg text-[#223872]">{{ $c->target_score }}</td>
+                            <td class="px-6 py-4 text-right">
+                                <div class="flex justify-end gap-2">
+                                    <button @click='openEditModal(@json($c))' class="rounded-lg bg-gray-100 p-2 text-gray-600 transition hover:bg-gray-200 hover:text-gray-900">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                    </button>
+                                    <form action="{{ route('admin.criteria.destroy', [$department->id, $c->id]) }}" method="POST" onsubmit="return confirm('Hapus kriteria ini secara permanen?')">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="rounded-lg bg-red-50 p-2 text-red-600 transition hover:bg-red-100 hover:text-red-700">
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($criteria as $i => $c)
-                            <tr class="{{ !$c->is_active ? 'criteria-inactive' : '' }}">
-                                <td class="mono" style="font-size:12px; color:var(--color-text-muted);">{{ $c->sort_order ?? ($i+1) }}</td>
-                                <td>
-                                    @if($c->code)
-                                        <span class="criteria-code-badge mono">{{ $c->code }}</span>
-                                    @else
-                                        <span style="color:var(--color-text-muted);">—</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <div style="font-weight:600; font-size:13.5px;">{{ $c->name }}</div>
-                                    @if($c->description)
-                                        <div style="font-size:11.5px; color:var(--color-text-muted); margin-top:2px; max-width:280px;">{{ Str::limit($c->description, 80) }}</div>
-                                    @endif
-                                </td>
-                                <td>
-                                    <span class="{{ $c->type === 'core' ? 'criteria-chip-core' : 'criteria-chip-secondary' }}">
-                                        {{ $c->type === 'core' ? '⚡ Core Factor' : '○ Secondary Factor' }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="{{ $c->aspect === 'personal' ? 'criteria-chip-personal' : 'criteria-chip-organizational' }}">
-                                        {{ $c->aspect === 'personal' ? 'Personal' : 'Organizational' }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div style="display:flex; align-items:center; gap:6px;">
-                                        <span style="font-size:18px; font-weight:800; color:var(--color-brand);">{{ $c->target_score }}</span>
-                                        <span style="font-size:11px; color:var(--color-text-muted);">/ 5</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="badge {{ $c->is_active ? 'badge-emerald' : 'badge-slate' }}">
-                                        {{ $c->is_active ? 'Aktif' : 'Non-Aktif' }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div style="display:flex; gap:6px; justify-content:flex-end;">
-                                        <button onclick="openEditCriterion({{ $c->id }}, {{ json_encode($c) }})"
-                                                class="btn btn-ghost btn-xs">Edit</button>
-                                        <form action="{{ route('admin.criteria.destroy', [$department, $c]) }}" method="POST"
-                                              onsubmit="return confirm('Hapus kriteria ini?')">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="btn btn-danger btn-xs">Hapus</button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @endif
+                    @empty
+                        <tr>
+                            <td colspan="6" class="px-6 py-8 text-center text-gray-500">Belum ada kriteria di departemen ini. Silakan tambahkan atau reset ke Default.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    {{-- ===== ADD MODAL ===== --}}
-    <div id="add-criterion-modal" class="modal-backdrop hidden">
-        <div class="modal-box">
-            <div class="modal-header">
-                <div class="modal-title">Tambah Kriteria Baru</div>
-                <button class="modal-close" onclick="document.getElementById('add-criterion-modal').classList.add('hidden')">×</button>
+    {{-- Add Modal --}}
+    <div x-show="showAddModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4" x-cloak style="display: none;">
+        <div @click.away="showAddModal = false" class="w-full max-w-lg rounded-2xl bg-white shadow-xl overflow-hidden">
+            <div class="border-b border-gray-100 bg-gray-50 px-6 py-4 flex justify-between items-center">
+                <h3 class="font-black text-gray-900">Tambah Kriteria</h3>
+                <button @click="showAddModal = false" class="text-gray-400 hover:text-gray-600"><svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg></button>
             </div>
-            <form action="{{ route('admin.criteria.post', $department) }}" method="POST">
+            <form action="{{ route('admin.criteria.post', $department->id) }}" method="POST" class="p-6 flex flex-col gap-4">
                 @csrf
-                <div class="modal-body">
-                    <div class="form-grid-2">
-                        <div class="form-group">
-                            <label class="form-label">Kode <span style="color:var(--color-text-muted);">(Opsional)</span></label>
-                            <input type="text" name="code" class="form-input mono" placeholder="C01" value="{{ old('code') }}">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Urutan Sort</label>
-                            <input type="number" name="sort_order" class="form-input" placeholder="0" value="{{ old('sort_order', 0) }}" min="0">
-                        </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Nama Kriteria <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" required class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Kode (Opsional)</label>
+                        <input type="text" name="code" class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]">
                     </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Nama Kriteria <span style="color:#dc2626;">*</span></label>
-                        <input type="text" name="name" class="form-input" placeholder="Contoh: Kemampuan Berkomunikasi" required value="{{ old('name') }}">
-                    </div>
-
-                    <div class="form-grid-3">
-                        <div class="form-group">
-                            <label class="form-label">Tipe Faktor <span style="color:#dc2626;">*</span></label>
-                            <select name="type" class="form-select" required>
-                                <option value="core" {{ old('type') === 'core' ? 'selected' : '' }}>Core Factor</option>
-                                <option value="secondary" {{ old('type') === 'secondary' ? 'selected' : '' }}>Secondary Factor</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Aspek <span style="color:#dc2626;">*</span></label>
-                            <select name="aspect" class="form-select" required>
-                                <option value="personal" {{ old('aspect') === 'personal' ? 'selected' : '' }}>Personal</option>
-                                <option value="organizational" {{ old('aspect') === 'organizational' ? 'selected' : '' }}>Organizational</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Target Score <span style="color:#dc2626;">*</span></label>
-                            <select name="target_score" class="form-select" required>
-                                @for($s = 1; $s <= 5; $s++)
-                                    <option value="{{ $s }}" {{ old('target_score', 3) == $s ? 'selected' : '' }}>{{ $s }}</option>
-                                @endfor
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Deskripsi</label>
-                        <textarea name="description" class="form-input" rows="2" placeholder="Deskripsi singkat tentang kriteria ini...">{{ old('description') }}</textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Catatan Penilaian</label>
-                        <textarea name="catatan" class="form-input" rows="2" placeholder="Panduan pemberian skor untuk kriteria ini...">{{ old('catatan') }}</textarea>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label class="checkbox-item" style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
-                            <input type="checkbox" name="is_active" value="1" {{ old('is_active', '1') ? 'checked' : '' }} style="width:15px;height:15px;accent-color:var(--color-brand);">
-                            <span style="font-weight:500;">Kriteria Aktif</span>
-                        </label>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Target Skor <span class="text-red-500">*</span></label>
+                        <select name="target_score" required class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3" selected>3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" onclick="document.getElementById('add-criterion-modal').classList.add('hidden')" class="btn btn-ghost btn-sm">Batal</button>
-                    <button type="submit" class="btn btn-primary btn-sm">Tambah Kriteria</button>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Aspek Mutlak <span class="text-red-500">*</span></label>
+                        <select name="aspect" required class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]">
+                            <option value="personal">Personal</option>
+                            <option value="organizational">Organizational</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Tipe Faktor <span class="text-red-500">*</span></label>
+                        <select name="type" required class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]">
+                            <option value="core">Core Factor</option>
+                            <option value="secondary">Secondary Factor</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Deskripsi Singkat</label>
+                    <textarea name="description" rows="2" class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]"></textarea>
+                </div>
+                <div class="mt-4 flex justify-end gap-3">
+                    <button type="button" @click="showAddModal = false" class="rounded-xl px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100">Batal</button>
+                    <button type="submit" class="rounded-xl bg-[#223872] px-6 py-2 text-sm font-bold text-white shadow-sm hover:bg-[#122452]">Simpan</button>
                 </div>
             </form>
         </div>
     </div>
 
-    {{-- ===== EDIT MODAL ===== --}}
-    <div id="edit-criterion-modal" class="modal-backdrop hidden">
-        <div class="modal-box">
-            <div class="modal-header">
-                <div class="modal-title">Edit Kriteria</div>
-                <button class="modal-close" onclick="document.getElementById('edit-criterion-modal').classList.add('hidden')">×</button>
+    {{-- Edit Modal --}}
+    <div x-show="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4" x-cloak style="display: none;">
+        <div @click.away="showEditModal = false" class="w-full max-w-lg rounded-2xl bg-white shadow-xl overflow-hidden">
+            <div class="border-b border-gray-100 bg-gray-50 px-6 py-4 flex justify-between items-center">
+                <h3 class="font-black text-gray-900">Edit Kriteria</h3>
+                <button @click="showEditModal = false" class="text-gray-400 hover:text-gray-600"><svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg></button>
             </div>
-            <form id="edit-criterion-form" action="" method="POST">
+            <form :action="`/admin/departments/{{ $department->id }}/criteria/${editData.id}`" method="POST" class="p-6 flex flex-col gap-4">
                 @csrf @method('PUT')
-                <div class="modal-body">
-                    <div class="form-grid-2">
-                        <div class="form-group">
-                            <label class="form-label">Kode</label>
-                            <input type="text" name="code" id="edit_c_code" class="form-input mono" placeholder="C01">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Urutan Sort</label>
-                            <input type="number" name="sort_order" id="edit_c_sort" class="form-input" min="0">
-                        </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Nama Kriteria <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" x-model="editData.name" required class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Kode</label>
+                        <input type="text" name="code" x-model="editData.code" class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]">
                     </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Nama Kriteria <span style="color:#dc2626;">*</span></label>
-                        <input type="text" name="name" id="edit_c_name" class="form-input" required>
-                    </div>
-
-                    <div class="form-grid-3">
-                        <div class="form-group">
-                            <label class="form-label">Tipe Faktor <span style="color:#dc2626;">*</span></label>
-                            <select name="type" id="edit_c_type" class="form-select" required>
-                                <option value="core">Core Factor</option>
-                                <option value="secondary">Secondary Factor</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Aspek <span style="color:#dc2626;">*</span></label>
-                            <select name="aspect" id="edit_c_aspect" class="form-select" required>
-                                <option value="personal">Personal</option>
-                                <option value="organizational">Organizational</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Target Score <span style="color:#dc2626;">*</span></label>
-                            <select name="target_score" id="edit_c_target" class="form-select" required>
-                                @for($s = 1; $s <= 5; $s++)
-                                    <option value="{{ $s }}">{{ $s }}</option>
-                                @endfor
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Deskripsi</label>
-                        <textarea name="description" id="edit_c_desc" class="form-input" rows="2"></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Catatan Penilaian</label>
-                        <textarea name="catatan" id="edit_c_catatan" class="form-input" rows="2"></textarea>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
-                            <input type="checkbox" name="is_active" id="edit_c_active" value="1" style="width:15px;height:15px;accent-color:var(--color-brand);">
-                            <span style="font-weight:500;">Kriteria Aktif</span>
-                        </label>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Target Skor <span class="text-red-500">*</span></label>
+                        <select name="target_score" x-model="editData.target_score" required class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" onclick="document.getElementById('edit-criterion-modal').classList.add('hidden')" class="btn btn-ghost btn-sm">Batal</button>
-                    <button type="submit" class="btn btn-primary btn-sm">Simpan Perubahan</button>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">Aspek (Mutlak)</label>
+                        <input type="text" disabled x-model="editData.aspect" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2 text-sm text-gray-500 cursor-not-allowed uppercase font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Tipe Faktor <span class="text-red-500">*</span></label>
+                        <select name="type" x-model="editData.type" required class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]">
+                            <option value="core">Core Factor</option>
+                            <option value="secondary">Secondary Factor</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Deskripsi Singkat</label>
+                    <textarea name="description" x-model="editData.description" rows="2" class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]"></textarea>
+                </div>
+                <div class="mt-4 flex justify-end gap-3">
+                    <button type="button" @click="showEditModal = false" class="rounded-xl px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100">Batal</button>
+                    <button type="submit" class="rounded-xl bg-[#223872] px-6 py-2 text-sm font-bold text-white shadow-sm hover:bg-[#122452]">Simpan Perubahan</button>
                 </div>
             </form>
         </div>
     </div>
-
+</div>
 @endsection
-
-@push('scripts')
-<script>
-function openEditCriterion(criterionId, c) {
-    const baseUrl = '{{ url('/admin/criteria/' . $department->slug) }}';
-    document.getElementById('edit-criterion-form').action = baseUrl + '/' + criterionId;
-
-    document.getElementById('edit_c_code').value = c.code || '';
-    document.getElementById('edit_c_sort').value = c.sort_order || 0;
-    document.getElementById('edit_c_name').value = c.name || '';
-    document.getElementById('edit_c_type').value = c.type || 'core';
-    document.getElementById('edit_c_aspect').value = c.aspect || 'personal';
-    document.getElementById('edit_c_target').value = c.target_score || 3;
-    document.getElementById('edit_c_desc').value = c.description || '';
-    document.getElementById('edit_c_catatan').value = c.catatan || '';
-    document.getElementById('edit_c_active').checked = c.is_active == 1;
-
-    document.getElementById('edit-criterion-modal').classList.remove('hidden');
-}
-
-['add-criterion-modal', 'edit-criterion-modal'].forEach(id => {
-    const modal = document.getElementById(id);
-    if (modal) {
-        modal.addEventListener('click', e => {
-            if (e.target === modal) modal.classList.add('hidden');
-        });
-    }
-});
-
-@if($errors->any() && old('name') !== null && old('type') !== null)
-    document.getElementById('add-criterion-modal').classList.remove('hidden');
-@endif
-</script>
-@endpush

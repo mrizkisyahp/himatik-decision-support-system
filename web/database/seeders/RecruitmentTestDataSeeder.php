@@ -11,9 +11,13 @@ use App\Models\CandidateInterviewSchedule;
 use App\Models\CandidateOrganization;
 use App\Models\CandidateSkill;
 use App\Models\DefaultEvaluationCriteria;
+use App\Models\DepartmentAgenda;
+use App\Models\DepartmentWorkProgram;
 use App\Models\Departmentsbiro;
 use App\Models\Evaluation;
 use App\Models\InterviewSchedule;
+use App\Models\OpenRecruitment;
+use App\Models\OpenRecruitmentQuota;
 use App\Models\SpkGapWeight;
 use App\Models\User;
 use App\Support\SpkCriteriaDefaults;
@@ -45,37 +49,138 @@ class RecruitmentTestDataSeeder extends Seeder
             ['Rania', 'bendum@himatik.org'],
             ['Zaldi', 'kesma@himatik.org'],
             ['Rizki', 'keroh@himatik.org'],
-        ])->map(fn ($row) => User::create([
-            'name' => $row[0],
-            'email' => $row[1],
-            'password' => Hash::make('password123'),
-            'role' => 'interviewer',
-            'email_verified_at' => now(),
-        ]));
+        ])->map(fn($row) => User::create([
+                'name' => $row[0],
+                'email' => $row[1],
+                'password' => Hash::make('password123'),
+                'role' => 'interviewer',
+                'email_verified_at' => now(),
+            ]));
 
         $departments = collect([
-            ['Departemen Pendidikan dan Teknologi', 'Berfokus pada akademik, teknologi, dan pengembangan mahasiswa TIK.'],
-            ['Departemen Kesehatan Mahasiswa', 'Mengelola kesehatan dan kebersihan lingkungan mahasiswa TIK.'],
-            ['Biro Bendahara Umum', 'Mengelola pembukuan dan keuangan HIMATIK.'],
-            ['Departemen Komunikasi dan Informasi', 'Mengelola komunikasi, publikasi, dan arus informasi.'],
-            ['Departemen Bisnis dan Kemitraan', 'Mengelola wirausaha, pendanaan, kemitraan, dan logistik.'],
-            ['Departemen Sosial Politik', 'Mengelola advokasi serta isu sosial politik internal dan eksternal.'],
-            ['Biro Kesekretariatan', 'Mengelola administrasi dan kesekretariatan organisasi.'],
-            ['Biro Kreatif', 'Mengelola desain, publikasi, dan kebutuhan kreatif organisasi.'],
-            ['Departemen Kerohanian', 'Mengelola kegiatan dan informasi kerohanian.'],
-            ['Departemen Sosial Mahasiswa', 'Mengelola advokasi dan kegiatan sosial kemahasiswaan.'],
-        ])->map(fn ($row) => Departmentsbiro::create([
-            'name' => $row[0],
-            'slug' => Str::slug($row[0]),
-            'description' => $row[1],
-            'personal_aspect_weight' => 60.00,
-            'organizational_aspect_weight' => 40.00,
-            'core_factor_weight' => 60.00,
-            'secondary_factor_weight' => 40.00,
-            'is_active' => true,
-        ]));
+            ['Departemen Pendidikan dan Teknologi', 'Departemen ini berfokus pada kegiatan-kegiatan berkaitan dengan keilmuan dan utilisasi teknologi dalam lingkup jurusan TIK. Serta berperan penting dalam menjalankan visi misi untuk meningkatkan kualitas mahasiswa TIK baik secara akademik maupun non akademik.'],
+            ['Departemen Kesehatan Mahasiswa', 'Departemen Kesehatan Mahasiswa atau Kesma di Jurusan Teknik Informatika dan Komputer (TIK) Kampus Politeknik Negeri Jakarta bertugas mengawasi dan bertanggung jawab atas kebersihan lingkungan serta kesehatan civitas internal di Jurusan TIK. Departemen Kesma aktif dalam menciptakan lingkungan internal TIK yang bersih dan sehat, serta menyelenggarakan kegiatan promosi kesehatan melalui konten digital.'],
+            ['Biro Bendahara Umum', 'Biro Bendahara Umum merupakan biro yang bergerak dalam bidang keuangan. Biro Bendahara Umum bertugas untuk membuat pembukuan dan mengatur keuangan dalam HIMATIK.'],
+            ['Departemen Komunikasi dan Informasi', 'Departemen Komunikasi dan Informasi, disingkat KOMINFO merupakan departemen yang memiliki banyak ranah terkait komunikasi dan informasi. Departemen Komunikasi dan Informasi bergerak dalam menjalin hubungan informasi yang baik dan bersinergi di dalam maupun di luar Jurusan TIK. Bertanggung jawab dalam mengkoordinir penyebaran serta menjaga kelancaran arus informasi kemahasiswaan kepada civitas akademika dalam rangka menunjang kegiatan HIMATIK.'],
+            ['Departemen Bisnis dan Kemitraan', 'Departemen Bisnis dan Kemitraan adalah suatu departemen yang bergerak di bidang wirausaha, pendanaan, dan menyediakan keperluan logistik untuk Mahasiswa Jurusan TIK dan luar lingkup Jurusan TIK. Departemen Bisnis Dan Kemitraan harus menjadi wadah mahasiswa dalam berwirausaha dengan mengadakan kegiatan yang bersifat pembelajaran dan peningkatan Kewirausahaan bagi Mahasiswa TIK.'],
+            ['Departemen Sosial Politik', 'Departemen Sosial Politik merupakan departemen yang dibentuk dengan tugas melakukan identifikasi dan bertanggung jawab terhadap berbagai isu-isu sosial dan politik yang berkembang baik dalam ruang lingkup internal Jurusan Teknik Informatika dan Komputer (TIK) kampus Politeknik Negeri Jakarta, maupun eksternal kampus Politeknik Negeri Jakarta.'],
+            ['Biro Kesekretariatan', 'Biro Kestari adalah biro yang bertugas untuk mengurus seluruh kegiatan administrasi yang ada di HIMATIK.'],
+            ['Biro Kreatif', 'Biro Kreatif HIMATIK adalah biro yang dibentuk untuk menangani segala permasalahan yang berkaitan dengan design publikasi dari internal HIMATIK, serta membantu merencanakan ide kreatif untuk suatu kegiatan atau program kerja HIMATIK.'],
+            ['Departemen Kerohanian', 'Departemen Kerohanian merupakan departemen yang bertanggungjawab untuk memberikan ide, gagasan dan kemampuannya dalam bidang kerohanian berupa karya - karya dan agenda yang semuanya bertujuan untuk meningkatkan kualitas keimanan atau pengetahuan yang berhubungan dengan keagamaan setiap mahasiswa Jurusan Teknik Informatika dan Komputer. Selain itu, Departemen kerohanian juga bertanggungjawab dalam mengkoordinir kegiatan perayaan hari besar agama serta informasi mengenai pengetahuan agama.'],
+            ['Departemen Sosial Mahasiswa', 'Departemen Sosial Mahasiswa (SOSMA) merupakan bagian dari Himpunan Mahasiswa Teknik Informatika dan Komputer (HIMATIK) yang bergerak di bidang advokasi dan semua kegiatan sosial kemahasiswaan Jurusan TIK.'],
+            ['Biro Penelitian dan Pengembangan', 'Organ internal yang bertugas mengumpulkan, mengelola, dan menganalisis data untuk pengembangan HIMATIK. Berfungsi dalam pengembangan SDM serta menciptakan lingkungan kerja kekeluargaan dan rasa memiliki di HIMATIK PNJ.']
+        ])->map(fn($row) => Departmentsbiro::create([
+                'name' => $row[0],
+                'slug' => Str::slug($row[0]),
+                'description' => $row[1],
+                'personal_aspect_weight' => 60.00,
+                'organizational_aspect_weight' => 40.00,
+                'core_factor_weight' => 60.00,
+                'secondary_factor_weight' => 40.00,
+                'is_active' => true,
+            ]));
 
-        $defaultCriteria = collect(SpkCriteriaDefaults::criteria())->map(fn ($row, $index) => DefaultEvaluationCriteria::create([
+        $departmentPrograms = [
+            'Departemen Pendidikan dan Teknologi' => ['ITechno Cup'],
+            'Departemen Sosial Mahasiswa' => ['SAUM "Satu Aksi Untuk Masyarakat"'],
+            'Departemen Kesehatan Mahasiswa' => ['TIKGAMES'],
+        ];
+
+        $departmentAgendas = [
+            'Biro Kreatif' => [
+                'Pengambilan Foto Fungsionaris HIMATIK Yugartha',
+                'Pembuatan design feeds Fungsionaris HIMATIK Yugartha',
+                'Pembuatan Lanyard dan ID Card HIMATIK Yugartha',
+                'Produksi Company Profile',
+            ],
+            'Departemen Kerohanian' => [
+                'Keroh Berbagi',
+                'Amal Mahasiswa',
+                'Positif dan Postline',
+                'Pray My Habit',
+                'Buka PR',
+            ],
+            'Departemen Bisnis dan Kemitraan' => [
+                'Bismit Inventory',
+                'Barnaby',
+                'Bismit Info',
+                'SANDI (Sayembara Design)',
+            ],
+            'Departemen Pendidikan dan Teknologi' => [
+                'GULTIK (Gudang Ilmu TIK)',
+                'APRESMAPRES (Apresiasi Mahasiswa Berprestasi)',
+                'LOGISTIK (Log Informasi TIK)',
+                'KSM Meet Up',
+            ],
+            'Biro Bendahara Umum' => [
+                'Laporan Transparansi',
+                'Pembukuan Kas',
+                'Laporan Keuangan Departmen/Biro',
+                'Pencatatan Buku Besar',
+                'LPJ Keuangan Akhir',
+            ],
+            'Departemen Sosial Mahasiswa' => [
+                'Apresiatik',
+                'Dialog Jurusan',
+                'Wematik',
+                'SOSMATALK',
+                'Lentik',
+            ],
+            'Departemen Komunikasi dan Informasi' => [
+                'Motor Vario (Motivation Word and Various Information)',
+                'Podcast',
+                'Cantik (Cerita Anak TIK)',
+                'FKJ (Forum Komunikasi Jurusan)',
+                'WEMATIK (Welcoming Mahasiswa Baru TIK)',
+            ],
+            'Biro Penelitian dan Pengembangan' => [
+                'Staff of The Month',
+                'Laporan Organisasi dan Kegiatan HIMATIK',
+                'Studi Banding',
+                'Training of Trainers',
+                'Pelatihan Manajemen Organisasi',
+                'Forum Departemen dan biro',
+            ],
+            'Biro Kesekretariatan' => [
+                'Bedah Sekret',
+                'Bedah Loker',
+                'Open Source',
+            ],
+            'Departemen Sosial Politik' => [
+                'Dialog Jurusan',
+                'Sempol (Semua Paham Politik)',
+                'Makasi (Manajemen Massa Aksi)',
+                'Roadshow',
+            ],
+            'Departemen Kesehatan Mahasiswa' => [
+                'SariroTIK',
+                'SehArt',
+                'SporTIK',
+                'TIK Football League (TFL)',
+            ],
+        ];
+
+        foreach ($departments as $department) {
+            foreach ($departmentPrograms[$department->name] ?? [] as $index => $programName) {
+                DepartmentWorkProgram::create([
+                    'department_id' => $department->id,
+                    'name' => $programName,
+                    'is_active' => true,
+                    'sort_order' => $index + 1,
+                ]);
+            }
+
+            foreach ($departmentAgendas[$department->name] ?? [] as $index => $agendaTitle) {
+                DepartmentAgenda::create([
+                    'department_id' => $department->id,
+                    'title' => $agendaTitle,
+                    'is_active' => true,
+                    'sort_order' => $index + 1,
+                ]);
+            }
+        }
+
+        $defaultCriteria = collect(SpkCriteriaDefaults::criteria())->map(fn($row, $index) => DefaultEvaluationCriteria::create([
             'code' => $row['code'],
             'name' => $row['name'],
             'description' => $row['description'],
@@ -108,6 +213,31 @@ class RecruitmentTestDataSeeder extends Seeder
                 'gap' => $gap,
                 'weight' => $weight,
             ]);
+        }
+
+        $openRecruitments = collect([
+            'staff' => OpenRecruitment::create([
+                'candidate_type' => 'staff',
+                'starts_at' => now()->subDay()->setTime(8, 0),
+                'ends_at' => now()->addDays(14)->setTime(23, 59),
+                'status' => 'open',
+            ]),
+            'bph' => OpenRecruitment::create([
+                'candidate_type' => 'bph',
+                'starts_at' => now()->subDay()->setTime(8, 0),
+                'ends_at' => now()->addDays(10)->setTime(23, 59),
+                'status' => 'open',
+            ]),
+        ]);
+
+        foreach ($openRecruitments->keys() as $type) {
+            foreach ($departments as $department) {
+                OpenRecruitmentQuota::create([
+                    'candidate_type' => $type,
+                    'department_id' => $department->id,
+                    'quota' => $type === 'staff' ? 5 : 2,
+                ]);
+            }
         }
 
         $now = Carbon::now()->addDays(2)->setTime(9, 0);

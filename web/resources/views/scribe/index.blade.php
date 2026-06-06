@@ -8,8 +8,8 @@
 
     <link href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="{{ asset("/vendor/scribe/css/theme-default.style.css") }}" media="screen">
-    <link rel="stylesheet" href="{{ asset("/vendor/scribe/css/theme-default.print.css") }}" media="print">
+    <link rel="stylesheet" href="../docs/css/theme-default.style.css" media="screen">
+    <link rel="stylesheet" href="../docs/css/theme-default.print.css" media="print">
 
     <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.10/lodash.min.js"></script>
 
@@ -31,9 +31,9 @@
         var useCsrf = Boolean();
         var csrfUrl = "/sanctum/csrf-cookie";
     </script>
-    <script src="{{ asset("/vendor/scribe/js/tryitout-5.10.0.js") }}"></script>
+    <script src="../docs/js/tryitout-5.10.0.js"></script>
 
-    <script src="{{ asset("/vendor/scribe/js/theme-default-5.10.0.js") }}"></script>
+    <script src="../docs/js/theme-default-5.10.0.js"></script>
 
 </head>
 
@@ -42,7 +42,7 @@
 <a href="#" id="nav-button">
     <span>
         MENU
-        <img src="{{ asset("/vendor/scribe/images/navbar.png") }}" alt="navbar-image"/>
+        <img src="../docs/images/navbar.png" alt="navbar-image"/>
     </span>
 </a>
 <div class="tocify-wrapper">
@@ -219,18 +219,21 @@
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-GETapi-oauth2-callback">
                                 <a href="#endpoints-GETapi-oauth2-callback">Handles the OAuth2 callback and retrieves the required file for the redirect.</a>
                             </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-POSTapi-admin-criteria--department_id--reset">
+                                <a href="#endpoints-POSTapi-admin-criteria--department_id--reset">POST api/admin/criteria/{department_id}/reset</a>
+                            </li>
                                                                         </ul>
                             </ul>
             </div>
 
     <ul class="toc-footer" id="toc-footer">
-                    <li style="padding-bottom: 5px;"><a href="{{ route("scribe.postman") }}">View Postman collection</a></li>
-                            <li style="padding-bottom: 5px;"><a href="{{ route("scribe.openapi") }}">View OpenAPI spec</a></li>
+                    <li style="padding-bottom: 5px;"><a href="../docs/collection.json">View Postman collection</a></li>
+                            <li style="padding-bottom: 5px;"><a href="../docs/openapi.yaml">View OpenAPI spec</a></li>
                 <li><a href="http://github.com/knuckleswtf/scribe">Documentation powered by Scribe ✍</a></li>
     </ul>
 
     <ul class="toc-footer" id="last-updated">
-        <li>Last updated: June 1, 2026</li>
+        <li>Last updated: June 6, 2026</li>
     </ul>
 </div>
 
@@ -1496,12 +1499,12 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --form "committees[]=architecto"\
     --form "skills[]=architecto"\
     --form "facilities[]=architecto"\
-    --form "photo=@C:\Users\Rizki\AppData\Local\Temp\phpA4E9.tmp" \
-    --form "instagram_proof=@C:\Users\Rizki\AppData\Local\Temp\phpA4EA.tmp" \
-    --form "youtube_proof=@C:\Users\Rizki\AppData\Local\Temp\phpA4EB.tmp" \
-    --form "political_statement=@C:\Users\Rizki\AppData\Local\Temp\phpA4EC.tmp" \
-    --form "candidate_signature=@C:\Users\Rizki\AppData\Local\Temp\phpA4ED.tmp" \
-    --form "parent_signature=@C:\Users\Rizki\AppData\Local\Temp\phpA4EE.tmp" </code></pre></div>
+    --form "photo=@C:\Users\Rizki\AppData\Local\Temp\php700A.tmp" \
+    --form "instagram_proof=@C:\Users\Rizki\AppData\Local\Temp\php701B.tmp" \
+    --form "youtube_proof=@C:\Users\Rizki\AppData\Local\Temp\php701C.tmp" \
+    --form "political_statement=@C:\Users\Rizki\AppData\Local\Temp\php701D.tmp" \
+    --form "candidate_signature=@C:\Users\Rizki\AppData\Local\Temp\php701E.tmp" \
+    --form "parent_signature=@C:\Users\Rizki\AppData\Local\Temp\php701F.tmp" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -1629,27 +1632,27 @@ $response = $client-&gt;post(
             ],
             [
                 'name' =&gt; 'photo',
-                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\phpA4E9.tmp', 'r')
+                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\php700A.tmp', 'r')
             ],
             [
                 'name' =&gt; 'instagram_proof',
-                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\phpA4EA.tmp', 'r')
+                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\php701B.tmp', 'r')
             ],
             [
                 'name' =&gt; 'youtube_proof',
-                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\phpA4EB.tmp', 'r')
+                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\php701C.tmp', 'r')
             ],
             [
                 'name' =&gt; 'political_statement',
-                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\phpA4EC.tmp', 'r')
+                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\php701D.tmp', 'r')
             ],
             [
                 'name' =&gt; 'candidate_signature',
-                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\phpA4ED.tmp', 'r')
+                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\php701E.tmp', 'r')
             ],
             [
                 'name' =&gt; 'parent_signature',
-                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\phpA4EE.tmp', 'r')
+                'contents' =&gt; fopen('C:\Users\Rizki\AppData\Local\Temp\php701F.tmp', 'r')
             ],
         ],
     ]
@@ -1915,7 +1918,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Candidate photo image. Example: <code>C:\Users\Rizki\AppData\Local\Temp\phpA4E9.tmp</code></p>
+<p>Candidate photo image. Example: <code>C:\Users\Rizki\AppData\Local\Temp\php700A.tmp</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>instagram_proof</code></b>&nbsp;&nbsp;
@@ -1927,7 +1930,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Instagram follow proof image. Example: <code>C:\Users\Rizki\AppData\Local\Temp\phpA4EA.tmp</code></p>
+<p>Instagram follow proof image. Example: <code>C:\Users\Rizki\AppData\Local\Temp\php701B.tmp</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>youtube_proof</code></b>&nbsp;&nbsp;
@@ -1939,7 +1942,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>YouTube subscribe proof image. Example: <code>C:\Users\Rizki\AppData\Local\Temp\phpA4EB.tmp</code></p>
+<p>YouTube subscribe proof image. Example: <code>C:\Users\Rizki\AppData\Local\Temp\php701C.tmp</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>political_statement</code></b>&nbsp;&nbsp;
@@ -1951,7 +1954,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Statement letter file. Example: <code>C:\Users\Rizki\AppData\Local\Temp\phpA4EC.tmp</code></p>
+<p>Statement letter file. Example: <code>C:\Users\Rizki\AppData\Local\Temp\php701D.tmp</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>candidate_signature</code></b>&nbsp;&nbsp;
@@ -1963,7 +1966,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Candidate signature image. Example: <code>C:\Users\Rizki\AppData\Local\Temp\phpA4ED.tmp</code></p>
+<p>Candidate signature image. Example: <code>C:\Users\Rizki\AppData\Local\Temp\php701E.tmp</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>parent_signature</code></b>&nbsp;&nbsp;
@@ -1975,7 +1978,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Parent signature image. Example: <code>C:\Users\Rizki\AppData\Local\Temp\phpA4EE.tmp</code></p>
+<p>Parent signature image. Example: <code>C:\Users\Rizki\AppData\Local\Temp\php701F.tmp</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>educations</code></b>&nbsp;&nbsp;
@@ -4143,8 +4146,12 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --data "{
     \"name\": \"Biro Humas\",
     \"description\": \"Biro Hubungan Masyarakat\",
+    \"slug\": \"v\",
+    \"personal_aspect_weight\": 1,
+    \"organizational_aspect_weight\": 5,
     \"core_factor_weight\": 0.6,
-    \"secondary_factor_weight\": 0.4
+    \"secondary_factor_weight\": 0.4,
+    \"is_active\": true
 }"
 </code></pre></div>
 
@@ -4163,8 +4170,12 @@ const headers = {
 let body = {
     "name": "Biro Humas",
     "description": "Biro Hubungan Masyarakat",
+    "slug": "v",
+    "personal_aspect_weight": 1,
+    "organizational_aspect_weight": 5,
     "core_factor_weight": 0.6,
-    "secondary_factor_weight": 0.4
+    "secondary_factor_weight": 0.4,
+    "is_active": true
 };
 
 fetch(url, {
@@ -4188,8 +4199,12 @@ $response = $client-&gt;post(
         'json' =&gt; [
             'name' =&gt; 'Biro Humas',
             'description' =&gt; 'Biro Hubungan Masyarakat',
+            'slug' =&gt; 'v',
+            'personal_aspect_weight' =&gt; 1,
+            'organizational_aspect_weight' =&gt; 5,
             'core_factor_weight' =&gt; 0.6,
             'secondary_factor_weight' =&gt; 0.4,
+            'is_active' =&gt; true,
         ],
     ]
 );
@@ -4333,6 +4348,42 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <p>optional Description. Example: <code>Biro Hubungan Masyarakat</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>slug</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="slug"                data-endpoint="POSTapi-admin-departments"
+               value="v"
+               data-component="body">
+    <br>
+<p>Must not be greater than 255 characters. Example: <code>v</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>personal_aspect_weight</code></b>&nbsp;&nbsp;
+<small>number</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="personal_aspect_weight"                data-endpoint="POSTapi-admin-departments"
+               value="1"
+               data-component="body">
+    <br>
+<p>Must be at least 0. Must not be greater than 100. Example: <code>1</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>organizational_aspect_weight</code></b>&nbsp;&nbsp;
+<small>number</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="organizational_aspect_weight"                data-endpoint="POSTapi-admin-departments"
+               value="5"
+               data-component="body">
+    <br>
+<p>Must be at least 0. Must not be greater than 100. Example: <code>5</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>core_factor_weight</code></b>&nbsp;&nbsp;
 <small>number</small>&nbsp;
  &nbsp;
@@ -4355,6 +4406,28 @@ You can check the Dev Tools console for debugging information.</code></pre>
                data-component="body">
     <br>
 <p>Secondary factor weight (0–1). Example: <code>0.4</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>is_active</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="POSTapi-admin-departments" style="display: none">
+            <input type="radio" name="is_active"
+                   value="true"
+                   data-endpoint="POSTapi-admin-departments"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="POSTapi-admin-departments" style="display: none">
+            <input type="radio" name="is_active"
+                   value="false"
+                   data-endpoint="POSTapi-admin-departments"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>Example: <code>true</code></p>
         </div>
         </form>
 
@@ -4379,8 +4452,11 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --data "{
     \"name\": \"Biro Humas\",
     \"description\": \"Updated description\",
+    \"personal_aspect_weight\": 1,
+    \"organizational_aspect_weight\": 1,
     \"core_factor_weight\": 0.6,
-    \"secondary_factor_weight\": 0.4
+    \"secondary_factor_weight\": 0.4,
+    \"is_active\": false
 }"
 </code></pre></div>
 
@@ -4399,8 +4475,11 @@ const headers = {
 let body = {
     "name": "Biro Humas",
     "description": "Updated description",
+    "personal_aspect_weight": 1,
+    "organizational_aspect_weight": 1,
     "core_factor_weight": 0.6,
-    "secondary_factor_weight": 0.4
+    "secondary_factor_weight": 0.4,
+    "is_active": false
 };
 
 fetch(url, {
@@ -4424,8 +4503,11 @@ $response = $client-&gt;put(
         'json' =&gt; [
             'name' =&gt; 'Biro Humas',
             'description' =&gt; 'Updated description',
+            'personal_aspect_weight' =&gt; 1,
+            'organizational_aspect_weight' =&gt; 1,
             'core_factor_weight' =&gt; 0.6,
             'secondary_factor_weight' =&gt; 0.4,
+            'is_active' =&gt; false,
         ],
     ]
 );
@@ -4594,6 +4676,42 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <p>optional Description. Example: <code>Updated description</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>slug</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="slug"                data-endpoint="PUTapi-admin-departments--department_id-"
+               value=""
+               data-component="body">
+    <br>
+
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>personal_aspect_weight</code></b>&nbsp;&nbsp;
+<small>number</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="personal_aspect_weight"                data-endpoint="PUTapi-admin-departments--department_id-"
+               value="1"
+               data-component="body">
+    <br>
+<p>Must be at least 0. Must not be greater than 100. Example: <code>1</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>organizational_aspect_weight</code></b>&nbsp;&nbsp;
+<small>number</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="organizational_aspect_weight"                data-endpoint="PUTapi-admin-departments--department_id-"
+               value="1"
+               data-component="body">
+    <br>
+<p>Must be at least 0. Must not be greater than 100. Example: <code>1</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>core_factor_weight</code></b>&nbsp;&nbsp;
 <small>number</small>&nbsp;
  &nbsp;
@@ -4616,6 +4734,28 @@ You can check the Dev Tools console for debugging information.</code></pre>
                data-component="body">
     <br>
 <p>Secondary factor weight (0–1). Example: <code>0.4</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>is_active</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="PUTapi-admin-departments--department_id-" style="display: none">
+            <input type="radio" name="is_active"
+                   value="true"
+                   data-endpoint="PUTapi-admin-departments--department_id-"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="PUTapi-admin-departments--department_id-" style="display: none">
+            <input type="radio" name="is_active"
+                   value="false"
+                   data-endpoint="PUTapi-admin-departments--department_id-"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>Example: <code>false</code></p>
         </div>
         </form>
 
@@ -4999,8 +5139,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Accept: application/json" \
     --data "{
     \"session_name\": \"Sesi Pagi A\",
+    \"department_id\": \"architecto\",
     \"scheduled_at\": \"2025-08-15T09:00:00\",
     \"location\": \"Ruang Rapat HIMATIK\",
+    \"is_active\": false,
     \"interviewer_ids\": [
         2,
         3
@@ -5022,8 +5164,10 @@ const headers = {
 
 let body = {
     "session_name": "Sesi Pagi A",
+    "department_id": "architecto",
     "scheduled_at": "2025-08-15T09:00:00",
     "location": "Ruang Rapat HIMATIK",
+    "is_active": false,
     "interviewer_ids": [
         2,
         3
@@ -5050,8 +5194,10 @@ $response = $client-&gt;post(
         ],
         'json' =&gt; [
             'session_name' =&gt; 'Sesi Pagi A',
+            'department_id' =&gt; 'architecto',
             'scheduled_at' =&gt; '2025-08-15T09:00:00',
             'location' =&gt; 'Ruang Rapat HIMATIK',
+            'is_active' =&gt; false,
             'interviewer_ids' =&gt; [
                 2,
                 3,
@@ -5187,6 +5333,18 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <p>Session name. Example: <code>Sesi Pagi A</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>department_id</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="department_id"                data-endpoint="POSTapi-admin-schedules"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>The <code>id</code> of an existing record in the departmentsbiro table. Example: <code>architecto</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>scheduled_at</code></b>&nbsp;&nbsp;
 <small>string</small>&nbsp;
  &nbsp;
@@ -5209,6 +5367,28 @@ You can check the Dev Tools console for debugging information.</code></pre>
                data-component="body">
     <br>
 <p>Location. Example: <code>Ruang Rapat HIMATIK</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>is_active</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="POSTapi-admin-schedules" style="display: none">
+            <input type="radio" name="is_active"
+                   value="true"
+                   data-endpoint="POSTapi-admin-schedules"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="POSTapi-admin-schedules" style="display: none">
+            <input type="radio" name="is_active"
+                   value="false"
+                   data-endpoint="POSTapi-admin-schedules"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>Example: <code>false</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>interviewer_ids</code></b>&nbsp;&nbsp;
@@ -5246,8 +5426,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Accept: application/json" \
     --data "{
     \"session_name\": \"Sesi Pagi A\",
+    \"department_id\": \"architecto\",
     \"scheduled_at\": \"2025-08-15T09:00:00\",
     \"location\": \"Ruang Rapat HIMATIK\",
+    \"is_active\": false,
     \"interviewer_ids\": [
         2,
         3
@@ -5269,8 +5451,10 @@ const headers = {
 
 let body = {
     "session_name": "Sesi Pagi A",
+    "department_id": "architecto",
     "scheduled_at": "2025-08-15T09:00:00",
     "location": "Ruang Rapat HIMATIK",
+    "is_active": false,
     "interviewer_ids": [
         2,
         3
@@ -5297,8 +5481,10 @@ $response = $client-&gt;put(
         ],
         'json' =&gt; [
             'session_name' =&gt; 'Sesi Pagi A',
+            'department_id' =&gt; 'architecto',
             'scheduled_at' =&gt; '2025-08-15T09:00:00',
             'location' =&gt; 'Ruang Rapat HIMATIK',
+            'is_active' =&gt; false,
             'interviewer_ids' =&gt; [
                 2,
                 3,
@@ -5456,6 +5642,18 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <p>Session name. Example: <code>Sesi Pagi A</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>department_id</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="department_id"                data-endpoint="PUTapi-admin-schedules--schedule_id-"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>The <code>id</code> of an existing record in the departmentsbiro table. Example: <code>architecto</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>scheduled_at</code></b>&nbsp;&nbsp;
 <small>string</small>&nbsp;
  &nbsp;
@@ -5478,6 +5676,28 @@ You can check the Dev Tools console for debugging information.</code></pre>
                data-component="body">
     <br>
 <p>Location. Example: <code>Ruang Rapat HIMATIK</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>is_active</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="PUTapi-admin-schedules--schedule_id-" style="display: none">
+            <input type="radio" name="is_active"
+                   value="true"
+                   data-endpoint="PUTapi-admin-schedules--schedule_id-"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="PUTapi-admin-schedules--schedule_id-" style="display: none">
+            <input type="radio" name="is_active"
+                   value="false"
+                   data-endpoint="PUTapi-admin-schedules--schedule_id-"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>Example: <code>false</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>interviewer_ids</code></b>&nbsp;&nbsp;
@@ -5899,8 +6119,13 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --data "{
     \"name\": \"Komunikasi\",
     \"type\": \"core\",
+    \"aspect\": \"organizational\",
     \"target_score\": 4,
-    \"description\": \"Kemampuan berbicara di depan umum\"
+    \"description\": \"Kemampuan berbicara di depan umum\",
+    \"code\": \"v\",
+    \"catatan\": \"architecto\",
+    \"is_active\": false,
+    \"sort_order\": 39
 }"
 </code></pre></div>
 
@@ -5919,8 +6144,13 @@ const headers = {
 let body = {
     "name": "Komunikasi",
     "type": "core",
+    "aspect": "organizational",
     "target_score": 4,
-    "description": "Kemampuan berbicara di depan umum"
+    "description": "Kemampuan berbicara di depan umum",
+    "code": "v",
+    "catatan": "architecto",
+    "is_active": false,
+    "sort_order": 39
 };
 
 fetch(url, {
@@ -5944,8 +6174,13 @@ $response = $client-&gt;post(
         'json' =&gt; [
             'name' =&gt; 'Komunikasi',
             'type' =&gt; 'core',
+            'aspect' =&gt; 'organizational',
             'target_score' =&gt; 4,
             'description' =&gt; 'Kemampuan berbicara di depan umum',
+            'code' =&gt; 'v',
+            'catatan' =&gt; 'architecto',
+            'is_active' =&gt; false,
+            'sort_order' =&gt; 39,
         ],
     ]
 );
@@ -6111,6 +6346,20 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <p>Factor type. One of: <code>core</code>, <code>secondary</code>. Example: <code>core</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>aspect</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="aspect"                data-endpoint="POSTapi-admin-criteria--department_id-"
+               value="organizational"
+               data-component="body">
+    <br>
+<p>Example: <code>organizational</code></p>
+Must be one of:
+<ul style="list-style-type: square;"><li><code>personal</code></li> <li><code>organizational</code></li></ul>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>target_score</code></b>&nbsp;&nbsp;
 <small>integer</small>&nbsp;
  &nbsp;
@@ -6133,6 +6382,64 @@ You can check the Dev Tools console for debugging information.</code></pre>
                data-component="body">
     <br>
 <p>optional Description. Example: <code>Kemampuan berbicara di depan umum</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>code</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="code"                data-endpoint="POSTapi-admin-criteria--department_id-"
+               value="v"
+               data-component="body">
+    <br>
+<p>Must not be greater than 50 characters. Example: <code>v</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>catatan</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="catatan"                data-endpoint="POSTapi-admin-criteria--department_id-"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>Example: <code>architecto</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>is_active</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="POSTapi-admin-criteria--department_id-" style="display: none">
+            <input type="radio" name="is_active"
+                   value="true"
+                   data-endpoint="POSTapi-admin-criteria--department_id-"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="POSTapi-admin-criteria--department_id-" style="display: none">
+            <input type="radio" name="is_active"
+                   value="false"
+                   data-endpoint="POSTapi-admin-criteria--department_id-"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>Example: <code>false</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>sort_order</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="sort_order"                data-endpoint="POSTapi-admin-criteria--department_id-"
+               value="39"
+               data-component="body">
+    <br>
+<p>Must be at least 0. Example: <code>39</code></p>
         </div>
         </form>
 
@@ -6157,8 +6464,13 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --data "{
     \"name\": \"Komunikasi\",
     \"type\": \"core\",
+    \"aspect\": \"personal\",
     \"target_score\": 4,
-    \"description\": \"Updated description\"
+    \"description\": \"Updated description\",
+    \"code\": \"v\",
+    \"catatan\": \"architecto\",
+    \"is_active\": false,
+    \"sort_order\": 39
 }"
 </code></pre></div>
 
@@ -6177,8 +6489,13 @@ const headers = {
 let body = {
     "name": "Komunikasi",
     "type": "core",
+    "aspect": "personal",
     "target_score": 4,
-    "description": "Updated description"
+    "description": "Updated description",
+    "code": "v",
+    "catatan": "architecto",
+    "is_active": false,
+    "sort_order": 39
 };
 
 fetch(url, {
@@ -6202,8 +6519,13 @@ $response = $client-&gt;put(
         'json' =&gt; [
             'name' =&gt; 'Komunikasi',
             'type' =&gt; 'core',
+            'aspect' =&gt; 'personal',
             'target_score' =&gt; 4,
             'description' =&gt; 'Updated description',
+            'code' =&gt; 'v',
+            'catatan' =&gt; 'architecto',
+            'is_active' =&gt; false,
+            'sort_order' =&gt; 39,
         ],
     ]
 );
@@ -6369,6 +6691,20 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <p>Factor type. One of: <code>core</code>, <code>secondary</code>. Example: <code>core</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>aspect</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="aspect"                data-endpoint="PUTapi-admin-criteria--criterion_id-"
+               value="personal"
+               data-component="body">
+    <br>
+<p>Example: <code>personal</code></p>
+Must be one of:
+<ul style="list-style-type: square;"><li><code>personal</code></li> <li><code>organizational</code></li></ul>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>target_score</code></b>&nbsp;&nbsp;
 <small>integer</small>&nbsp;
  &nbsp;
@@ -6391,6 +6727,64 @@ You can check the Dev Tools console for debugging information.</code></pre>
                data-component="body">
     <br>
 <p>optional Description. Example: <code>Updated description</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>code</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="code"                data-endpoint="PUTapi-admin-criteria--criterion_id-"
+               value="v"
+               data-component="body">
+    <br>
+<p>Must not be greater than 50 characters. Example: <code>v</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>catatan</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="catatan"                data-endpoint="PUTapi-admin-criteria--criterion_id-"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>Example: <code>architecto</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>is_active</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="PUTapi-admin-criteria--criterion_id-" style="display: none">
+            <input type="radio" name="is_active"
+                   value="true"
+                   data-endpoint="PUTapi-admin-criteria--criterion_id-"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="PUTapi-admin-criteria--criterion_id-" style="display: none">
+            <input type="radio" name="is_active"
+                   value="false"
+                   data-endpoint="PUTapi-admin-criteria--criterion_id-"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>Example: <code>false</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>sort_order</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="sort_order"                data-endpoint="PUTapi-admin-criteria--criterion_id-"
+               value="39"
+               data-component="body">
+    <br>
+<p>Must be at least 0. Example: <code>39</code></p>
         </div>
         </form>
 
@@ -7413,7 +7807,8 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <p>
 </p>
 
-<p>Returns a database-driven list of departments/biros displayed on the Flutter app landing page.
+<p>Returns a database-driven list of departments/biros displayed on the public landing page.
+Includes safe public agenda and program kerja fields for the landing profile section.
 No authentication required.</p>
 
 <span id="example-requests-GETapi-landing">
@@ -7469,12 +7864,18 @@ print_r(json_decode((string) $body));</code></pre></div>
 
 <code class="language-json" style="max-height: 300px;">[
     {
-        &quot;name&quot;: &quot;Biro Humas&quot;,
-        &quot;description&quot;: &quot;Biro Hubungan Masyarakat bertanggung jawab atas komunikasi eksternal HIMATIK.&quot;
-    },
-    {
-        &quot;name&quot;: &quot;Biro Akademik&quot;,
-        &quot;description&quot;: &quot;Mengelola kegiatan akademik dan pengembangan ilmu anggota HIMATIK.&quot;
+        &quot;name&quot;: &quot;Biro Kreatif&quot;,
+        &quot;description&quot;: &quot;Biro Kreatif HIMATIK adalah biro yang dibentuk untuk menangani desain publikasi.&quot;,
+        &quot;work_programs&quot;: [],
+        &quot;agendas&quot;: [
+            {
+                &quot;title&quot;: &quot;Produksi Company Profile&quot;,
+                &quot;description&quot;: null,
+                &quot;start_date&quot;: null,
+                &quot;end_date&quot;: null,
+                &quot;location&quot;: null
+            }
+        ]
     }
 ]</code>
  </pre>
@@ -8078,6 +8479,146 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <p>Example: <code>application/json</code></p>
             </div>
                         </form>
+
+                    <h2 id="endpoints-POSTapi-admin-criteria--department_id--reset">POST api/admin/criteria/{department_id}/reset</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-POSTapi-admin-criteria--department_id--reset">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:8000/api/admin/criteria/1/reset" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/admin/criteria/1/reset"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "POST",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="php-example">
+    <pre><code class="language-php">$client = new \GuzzleHttp\Client();
+$url = 'http://localhost:8000/api/admin/criteria/1/reset';
+$response = $client-&gt;post(
+    $url,
+    [
+        'headers' =&gt; [
+            'Content-Type' =&gt; 'application/json',
+            'Accept' =&gt; 'application/json',
+        ],
+    ]
+);
+$body = $response-&gt;getBody();
+print_r(json_decode((string) $body));</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-admin-criteria--department_id--reset">
+</span>
+<span id="execution-results-POSTapi-admin-criteria--department_id--reset" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-admin-criteria--department_id--reset"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-admin-criteria--department_id--reset"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-admin-criteria--department_id--reset" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-admin-criteria--department_id--reset">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-admin-criteria--department_id--reset" data-method="POST"
+      data-path="api/admin/criteria/{department_id}/reset"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-admin-criteria--department_id--reset', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-admin-criteria--department_id--reset"
+                    onclick="tryItOut('POSTapi-admin-criteria--department_id--reset');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-admin-criteria--department_id--reset"
+                    onclick="cancelTryOut('POSTapi-admin-criteria--department_id--reset');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-admin-criteria--department_id--reset"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/admin/criteria/{department_id}/reset</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-admin-criteria--department_id--reset"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-admin-criteria--department_id--reset"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>department_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="department_id"                data-endpoint="POSTapi-admin-criteria--department_id--reset"
+               value="1"
+               data-component="url">
+    <br>
+<p>The ID of the department. Example: <code>1</code></p>
+            </div>
+                    </form>
 
             
 

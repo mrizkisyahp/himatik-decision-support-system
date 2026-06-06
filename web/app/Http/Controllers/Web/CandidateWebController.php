@@ -4,13 +4,13 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
+use App\Models\Candidate;
 use App\Models\CandidateInterviewSchedule;
 use App\Models\Departmentsbiro;
 use App\Models\InterviewSchedule;
 use App\Models\User;
 use App\Services\CandidateOtpService;
-use App\Services\CandidateProfileService;
-use App\Support\CandidateProfileRules;
+use App\Services\OpenRecruitmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,33 +18,40 @@ use Illuminate\Support\Facades\Hash;
 
 class CandidateWebController extends Controller
 {
-    public function showUserRegisterForm()
+    public function showUserRegisterForm(Request $request)
     {
         if (Auth::check()) {
             return $this->redirectCandidateUser(Auth::user());
         }
 
-        return view('auth.register');
+        $candidateType = in_array($request->candidate_type, ['staff', 'bph'], true)
+            ? $request->candidate_type
+            : 'staff';
+
+        return view('auth.register', compact('candidateType'));
     }
 
     public function registerUser(Request $request, CandidateOtpService $otpService)
     {
         $request->validate([
             'email' => 'required|email|unique:users,email',
-            'nama' => 'required|string|max:255',
             'password' => 'required|string|min:8|confirmed',
+            'candidate_type' => 'nullable|in:staff,bph',
         ]);
 
         DB::beginTransaction();
         try {
+            $emailName = str($request->email)->before('@')->replace(['.', '_', '-'], ' ')->title()->toString();
+
             $user = User::create([
-                'name' => $request->nama,
+                'name' => $emailName,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'role' => 'candidate',
             ]);
 
             Auth::login($user);
+            session(['intended_candidate_type' => $request->candidate_type ?: 'staff']);
             $otpService->issueFor($user);
 
             DB::commit();
@@ -88,7 +95,7 @@ class CandidateWebController extends Controller
             return back()->with('error', $result['message'])->withInput();
         }
 
-        return redirect()->route('landing')->with('success', 'Email verified successfully.');
+        return $this->redirectCandidateUser($user)->with('success', 'Email verified successfully.');
     }
 
     public function resendOtp(CandidateOtpService $otpService)
@@ -107,7 +114,7 @@ class CandidateWebController extends Controller
         return back()->with('success', 'A new OTP has been sent to your email.');
     }
 
-    public function showCandidateRegisterForm()
+    public function showCandidateRegisterForm(Request $request)
     {
         if (!Auth::check()) {
             return redirect()->route('login');
@@ -123,18 +130,24 @@ class CandidateWebController extends Controller
         }
 
         if ($user->candidate) {
-            return redirect()->route('candidate.schedule.view');
+            return redirect()->route('candidate.dashboard');
         }
+
+        if (in_array($request->candidate_type, ['staff', 'bph'], true)) {
+            session(['intended_candidate_type' => $request->candidate_type]);
+        }
+
+        $candidateType = session('intended_candidate_type', 'staff');
 
         $departments = Departmentsbiro::where('is_active', true)
             ->select('id', 'name', 'slug', 'description')
             ->orderBy('name')
             ->get();
 
-        return view('candidate.register', compact('departments'));
+        return view('candidate.register', compact('departments', 'candidateType'));
     }
 
-    public function registerCandidate(Request $request, CandidateProfileService $profileService)
+    public function registerCandidate(Request $request, OpenRecruitmentService $openRecruitmentService)
     {
         if (!Auth::check()) {
             return redirect()->route('login');
@@ -150,24 +163,79 @@ class CandidateWebController extends Controller
         }
 
         if ($user->candidate) {
-            return redirect()->route('candidate.schedule.view')->with('error', 'Your candidate profile is already registered.');
+            return redirect()->route('candidate.dashboard')->with('error', 'Your candidate profile is already registered.');
         }
 
-        $validated = $request->validate(CandidateProfileRules::rules());
+        $validated = $request->validate([
+            'candidate_type' => 'required|in:staff,bph',
+            'nama' => 'required|string|max:255',
+            'nickname' => 'required|string|max:255',
+            'nim' => ['required', 'digits:10', 'unique:candidates,nim'],
+            'prodi' => 'required|in:Teknik Informatika,Teknik Multimedia dan Jaringan,Teknik Multimedia dan Digital',
+            'kelas' => 'required|string|max:50',
+            'phone' => 'required|string|max:20',
+            'address' => 'required|string',
+        ]);
+
+        if (!$openRecruitmentService->isOpenFor($validated['candidate_type'])) {
+            return back()
+                ->with('error', 'Open recruitment ' . strtoupper($validated['candidate_type']) . ' sedang tidak dibuka.')
+                ->withInput();
+        }
 
         DB::beginTransaction();
         try {
-            $profileService->createFor($user, $validated);
+            $user->update(['name' => $validated['nama']]);
+
+            $candidate = Candidate::create([
+                'user_id' => $user->id,
+                'candidate_type' => $validated['candidate_type'],
+                'nickname' => $validated['nickname'],
+                'nim' => $validated['nim'],
+                'prodi' => $validated['prodi'],
+                'kelas' => $validated['kelas'],
+                'phone' => $validated['phone'],
+                'address' => $validated['address'],
+                'photo_path' => 'testing/placeholder.jpg',
+                'status' => 'registered',
+            ]);
+
+            Announcement::firstOrCreate(
+                ['candidate_id' => $candidate->id],
+                ['status' => 'pending', 'is_published' => false]
+            );
 
             DB::commit();
 
-            return redirect()->route('candidate.schedule.view')
-                ->with('success', 'Profile completed successfully! Now, please select your interview schedule.');
+            return redirect()->route('candidate.dashboard')
+                ->with('success', 'Profile completed successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
 
             return back()->with('error', 'Something went wrong while completing your profile. Please try again.')->withInput();
         }
+    }
+
+    public function showDashboard()
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'candidate') {
+            return redirect()->route('login');
+        }
+
+        if (!$user->email_verified_at) {
+            return redirect()->route('candidate.otp.view')->with('error', 'Please verify your email first.');
+        }
+
+        $candidate = $user->candidate;
+        if (!$candidate) {
+            return redirect()->route('candidate.register.view')->with('error', 'Please complete registration first.');
+        }
+
+        $candidate->load(['selectedInterviewSchedule.schedule', 'announcement']);
+        $announcement = $candidate->announcement;
+
+        return view('candidate.dashboardcandidate', compact('candidate', 'announcement'));
     }
 
     public function showScheduleForm()
@@ -207,8 +275,10 @@ class CandidateWebController extends Controller
             ->orderBy('scheduled_at', 'asc')
             ->get();
         $currentBookedSlotId = $candidate->selectedInterviewSchedule?->interview_schedule_id;
+        
+        $openRecruitment = \App\Models\OpenRecruitment::where('candidate_type', $candidate->candidate_type)->first();
 
-        return view('candidate.schedule', compact('candidate', 'availableSlots', 'announcement', 'dssResults', 'currentBookedSlotId'));
+        return view('candidate.schedule', compact('candidate', 'availableSlots', 'announcement', 'dssResults', 'currentBookedSlotId', 'openRecruitment'));
     }
 
     public function bookSchedule(Request $request)
@@ -270,6 +340,6 @@ class CandidateWebController extends Controller
             return redirect()->route('candidate.register.view');
         }
 
-        return redirect()->route('candidate.schedule.view');
+        return redirect()->route('candidate.dashboard');
     }
 }

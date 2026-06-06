@@ -19,11 +19,11 @@ class BladeDocsController extends Controller
                     'view' => 'landing.blade.php',
                     'controller' => 'Web\LandingWebController',
                     'action' => 'index',
-                    'description' => 'Public landing page and post-OTP destination before candidates continue into the full registration form.',
+                    'description' => 'Public HIMATIK profile and recruitment landing page. It includes the interactive Department/Biro selector with agenda and program kerja details.',
                     'variables' => [
-                        ['name' => '$departments', 'type' => 'Collection<Departmentsbiro>', 'description' => 'All departments with safe public columns only.'],
+                        ['name' => '$departments', 'type' => 'Collection<Departmentsbiro>', 'description' => 'Active public departments/biros with safe fields plus eager-loaded agendas and workPrograms. Blade infers Biro/Departemen from the name and renders one selected detail panel at a time.'],
                     ],
-                    'models' => ['Departmentsbiro'],
+                    'models' => ['Departmentsbiro', 'DepartmentAgenda', 'DepartmentWorkProgram'],
                     'post_fields' => [],
                 ],
                 [

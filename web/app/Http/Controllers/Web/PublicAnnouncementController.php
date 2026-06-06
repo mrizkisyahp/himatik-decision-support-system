@@ -8,14 +8,17 @@ use Illuminate\Http\Request;
 
 class PublicAnnouncementController extends Controller
 {
-    public function showAcceptedList()
+    public function showAcceptedList(Request $request)
     {
+        $isPublished = Announcement::where('is_published', true)->exists();
+
         // Query only the accepted candidates, and only if published
         $announcements = Announcement::where('status', 'accepted')
             ->where('is_published', true)
             ->with(['candidate.user', 'assignedDepartment'])
-            ->get();
+            ->paginate(15);
+            
         // Pass the variables to the Blade view
-        return view('public.announcements', compact('announcements'));
+        return view('public.announcements', compact('announcements', 'isPublished'));
     }
 }
