@@ -47,7 +47,7 @@
         <div class="relative z-10 flex flex-col justify-between gap-4">
             <div>
                 <p class="text-xs font-bold text-blue-600 mb-2 uppercase tracking-widest">{{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}</p>
-                <h1 class="text-3xl md:text-4xl font-black text-[#0F172A] tracking-tight">Halo, {{ $candidate->nickname ?: explode(' ', auth()->user()->name)[0] }}! 👋</h1>
+                <h1 class="text-3xl md:text-4xl font-black text-[#0F172A] tracking-tight">Halo, {{ explode(' ', auth()->user()->name)[0] }}! 👋</h1>
                 <p class="mt-3 text-[#64748B] max-w-xl text-sm md:text-base font-medium leading-relaxed">Selamat datang di portal kandidat HIMATIK PNJ. Lihat jadwal wawancara kamu dan info rekrutmen yang tersedia.</p>
             </div>
         </div>
@@ -260,11 +260,12 @@
                     <h4 class="text-sm font-black text-[#111827]">Informasi Identitas</h4>
                     <dl class="mt-3 grid gap-1.5 text-xs">
                         @foreach ([
-                            'Nama Panggilan'  => $candidate->nickname,
-                            'NIM'             => $candidate->nim,
-                            'Program Studi'   => $candidate->prodi,
-                            'Kelas'           => $candidate->kelas,
-                            'Nomor Telepon'   => $candidate->phone,
+                            'Nama Lengkap'    => $candidate->user->name,
+                            'Nama Panggilan'  => $candidate->user->nickname,
+                            'NIM'             => $candidate->user->nim,
+                            'Program Studi'   => $candidate->user->prodi,
+                            'Kelas'           => $candidate->user->kelas,
+                            'Nomor Telepon'   => $candidate->user->phone,
                             'Candidate Type'  => strtoupper($candidate->candidate_type),
                             'Status'          => $statusLabel[$candidate->status] ?? ucfirst($candidate->status),
                         ] as $label => $value)
@@ -276,7 +277,7 @@
                     </dl>
                     <div class="mt-1.5 rounded-xl bg-white px-3 py-2 text-xs">
                         <p class="font-bold text-[#64748b]">Alamat Lengkap</p>
-                        <p class="mt-1 leading-5 text-[#333333]">{{ $candidate->address ?: '-' }}</p>
+                        <p class="mt-1 leading-5 text-[#333333]">{{ $candidate->user->address ?: '-' }}</p>
                     </div>
                 </section>
 
@@ -331,7 +332,7 @@
                             <div class="flex items-center justify-between gap-3 rounded-xl bg-[#F4F7FF] px-3 py-2 text-xs">
                                 <span class="font-bold text-[#333333]">{{ $label }}</span>
                                 @if (filled($candidate->{$field}))
-                                    <a href="{{ asset('storage/' . $candidate->{$field}) }}" target="_blank"
+                                    <a href="{{ route('documents.download', [$candidate->id, $field]) }}" target="_blank"
                                        class="rounded-full bg-emerald-50 px-2 py-0.5 font-black text-emerald-700 hover:underline">Ada</a>
                                 @else
                                     <span class="rounded-full bg-amber-50 px-2 py-0.5 font-black text-amber-700">Kosong</span>

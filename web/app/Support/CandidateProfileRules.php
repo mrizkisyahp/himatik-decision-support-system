@@ -4,12 +4,13 @@ namespace App\Support;
 
 class CandidateProfileRules
 {
-    public static function rules(): array
+    public static function rules(?int $userId = null): array
     {
+        $nimRule = $userId ? 'unique:users,nim,' . $userId : 'unique:users,nim';
         return [
             'candidate_type' => 'required|in:staff,bph',
             'nickname' => 'required|string|max:255',
-            'nim' => ['required', 'digits:10', 'unique:candidates,nim'],
+            'nim' => ['required', 'digits:10', $nimRule],
             'prodi' => 'required|in:Teknik Informatika,Teknik Multimedia dan Jaringan,Teknik Multimedia dan Digital',
             'kelas' => 'required|string|max:50',
             'phone' => 'required|string|max:20',

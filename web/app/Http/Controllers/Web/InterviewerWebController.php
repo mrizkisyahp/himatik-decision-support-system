@@ -35,10 +35,13 @@ class InterviewerWebController extends Controller
             ->orderBy('start_time')
             ->get();
 
-        // Top 3 Kandidat (Mock for now until SpkResult is fully integrated)
-        $topCandidates = \App\Models\Candidate::whereHas('evaluations', function($q) use ($department) {
-            $q->where('department_id', $department->id);
-        })->with('user')->take(3)->get();
+        // Top 3 Kandidat using ProfileMatchingService
+        $rankings = $this->dss->getDepartmentRankings($department);
+        $topCandidates = collect($rankings)->take(3)->map(function ($r) {
+            $candidate = $r['candidate'];
+            $candidate->total_score = $r['total_score'];
+            return $candidate;
+        });
 
         return view('interviewer.dashboard', compact('todaySchedules', 'topCandidates', 'department'));
     }
@@ -125,8 +128,9 @@ class InterviewerWebController extends Controller
             if ($search) {
                 $candidatesQuery->where(function ($q) use ($search) {
                     $q->whereHas('user', function ($uq) use ($search) {
-                        $uq->where('name', 'like', '%' . $search . '%');
-                    })->orWhere('nim', 'like', '%' . $search . '%');
+                        $uq->where('name', 'like', '%' . $search . '%')
+                           ->orWhere('nim', 'like', '%' . $search . '%');
+                    });
                 });
             }
 
@@ -138,7 +142,10 @@ class InterviewerWebController extends Controller
                     ->whereIn('candidate_id', $candidates->pluck('id'))
                     ->get()
                     ->each(function ($ev) use (&$existingScores) {
-                        $existingScores[$ev->candidate_id][$ev->criteria_id] = $ev->score;
+                        $existingScores[$ev->candidate_id][$ev->criteria_id] = [
+                            'score' => $ev->score,
+                            'notes' => $ev->notes,
+                        ];
                     });
             }
 
@@ -187,10 +194,12 @@ class InterviewerWebController extends Controller
         $request->validate([
             'scores' => 'required|array',
             'scores.*' => 'required|integer|min:1|max:5',
+            'global_notes' => 'nullable|string|max:1000',
         ]);
 
         DB::beginTransaction();
         try {
+            $first = true;
             foreach ($request->scores as $criteriaId => $score) {
                 $criteriaExists = EvaluationCriteria::where('id', $criteriaId)
                     ->where('department_id', $department->id)
@@ -203,6 +212,12 @@ class InterviewerWebController extends Controller
                     'criteria_id' => $criteriaId,
                 ]);
                 $evaluation->score = $score;
+                if ($first) {
+                    $evaluation->notes = $request->input('global_notes');
+                    $first = false;
+                } else {
+                    $evaluation->notes = null;
+                }
                 $evaluation->interviewer_id = Auth::id();
                 $evaluation->version = $evaluation->exists ? $evaluation->version + 1 : 1;
                 $evaluation->save();
@@ -230,6 +245,7 @@ class InterviewerWebController extends Controller
         // Optionally revert status if no other departments evaluated
         if ($candidate->evaluations()->count() === 0) {
             $candidate->update(['status' => 'scheduled']);
+            $candidate->announcement()->delete();
         }
 
         return back()->with('success', "Scores for {$candidate->user->name} have been reset.");

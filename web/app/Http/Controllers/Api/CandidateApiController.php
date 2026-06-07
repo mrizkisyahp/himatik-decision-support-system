@@ -183,7 +183,7 @@ class CandidateApiController extends Controller
             ], 409);
         }
 
-        $validated = $request->validate(CandidateProfileRules::rules());
+        $validated = $request->validate(CandidateProfileRules::rules($request->user()->id));
 
         if (!$openRecruitmentService->isOpenFor($validated['candidate_type'])) {
             return response()->json([
@@ -329,12 +329,13 @@ class CandidateApiController extends Controller
 
         $currentBooking = $candidate->selectedInterviewSchedule;
         $availableSlots = InterviewSchedule::where('department_id', $firstChoiceDepartmentId)
-            ->where('is_active', true)
+            ->where('is_blocked', false)
             ->whereDoesntHave('booking', function ($query) use ($candidate) {
                 $query->where('candidate_id', '!=', $candidate->id);
             })
-            ->orderBy('scheduled_at', 'asc')
-            ->select('id', 'department_id', 'session_name', 'scheduled_at', 'location', 'is_active')
+            ->orderBy('date', 'asc')
+            ->orderBy('start_time', 'asc')
+            ->select('id', 'department_id', 'date', 'start_time', 'end_time', 'is_blocked')
             ->get();
 
         return response()->json([
@@ -382,7 +383,7 @@ class CandidateApiController extends Controller
         }
 
         $firstChoiceDepartmentId = $candidate->first_choice_department?->id;
-        $newSlot = InterviewSchedule::where('is_active', true)->findOrFail($request->schedule_id);
+        $newSlot = InterviewSchedule::where('is_blocked', false)->findOrFail($request->schedule_id);
 
         if ($newSlot->department_id !== $firstChoiceDepartmentId) {
             return response()->json([

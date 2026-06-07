@@ -420,7 +420,7 @@ class CandidateWebController extends Controller
         }
 
         if ($user->role === 'interviewer') {
-            return redirect()->route('interviewer.schedule');
+            return redirect()->route('interviewer.schedules');
         }
 
         if (!$user->email_verified_at) {
@@ -864,5 +864,33 @@ class CandidateWebController extends Controller
         }
 
         return view('candidate.registration-attachments', compact('candidate'));
+    }
+
+    public function downloadDocument(Request $request, Candidate $candidate, string $field)
+    {
+        $user = $request->user();
+        if ($user->role !== 'admin' && $user->role !== 'interviewer' && $user->candidate?->id !== $candidate->id) {
+            abort(403, 'Unauthorized.');
+        }
+
+        $validFields = [
+            'photo_path',
+            'instagram_proof_path',
+            'youtube_proof_path',
+            'political_statement_path',
+            'candidate_signature_path',
+            'parent_signature_path',
+        ];
+
+        if (!in_array($field, $validFields)) {
+            abort(404, 'Invalid document field.');
+        }
+
+        $path = $candidate->$field;
+        if (!$path || !\Illuminate\Support\Facades\Storage::disk('local')->exists($path)) {
+            abort(404, 'Document not found.');
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->response($path);
     }
 }

@@ -88,8 +88,15 @@
                                         {{ strtoupper(substr($candidate->user->name ?? '?', 0, 1)) }}
                                     </div>
                                     <div>
-                                        <div class="font-bold text-[#111827]">{{ $candidate->user->name }}</div>
-                                        <div class="text-xs text-[#64748B]">{{ $candidate->nim }}</div>
+                                        <div class="flex items-center gap-2">
+                                            <div class="font-bold text-[#111827]">{{ $candidate->user->name }}</div>
+                                            <button type="button" onclick="event.preventDefault(); document.getElementById('detailModal-{{ $candidate->id }}').showModal()"
+                                                    class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#EEF3FF] text-[#223872] transition-colors hover:bg-[#dce5f8] hover:text-[#1b2f60]"
+                                                    title="Lihat Detail Kandidat">
+                                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            </button>
+                                        </div>
+                                        <div class="text-xs text-[#64748B]">{{ $candidate->user->nim }}</div>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-6">
@@ -111,7 +118,9 @@
                                     @csrf
                                     <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                                         @foreach($criteria as $c)
-                                            @php $val = $cScores[$c->id] ?? null; @endphp
+                                            @php 
+                                                $val = $cScores[$c->id]['score'] ?? null; 
+                                            @endphp
                                             <div class="flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:border-[#4A90E2]">
                                                 <div>
                                                     <div class="flex items-start justify-between gap-2">
@@ -139,6 +148,19 @@
                                         @endforeach
                                     </div>
                                     
+                                    @php
+                                        $globalNote = '';
+                                        foreach($cScores as $eval) {
+                                            if (!empty($eval['notes'])) {
+                                                $globalNote = $eval['notes'];
+                                                break;
+                                            }
+                                        }
+                                    @endphp
+                                    <div class="mt-6">
+                                        <label class="mb-2 block text-sm font-bold text-[#223872]">Catatan Evaluasi (Opsional)</label>
+                                        <textarea name="global_notes" rows="3" placeholder="Masukkan catatan keseluruhan mengenai kandidat ini..." class="w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-700 outline-none transition focus:border-[#4A90E2] focus:bg-white focus:ring-2 focus:ring-[#4A90E2]/20">{{ $globalNote }}</textarea>
+                                    </div>
                                     <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
                                         <div class="flex items-center gap-2 text-xs text-gray-500">
                                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -159,6 +181,7 @@
                                 @endif
                             </div>
                         </details>
+                        <x-candidate-detail-modal :candidate="$candidate" />
                     @endforeach
                 </div>
                 
@@ -203,6 +226,7 @@
                                 <th class="px-6 py-4 font-bold text-center">Personal Score</th>
                                 <th class="px-6 py-4 font-bold text-center">Org. Score</th>
                                 <th class="px-6 py-4 font-bold text-right text-[#223872]">Total Skor DSS</th>
+                                <th class="px-6 py-4 font-bold text-center w-32">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[#D8E2F3]">
@@ -225,12 +249,61 @@
                                     </td>
                                     <td class="px-6 py-4">
                                         <div class="font-bold text-[#111827] {{ $rank === 1 ? 'text-amber-700 text-base' : '' }}">{{ $r['candidate']->user->name }}</div>
-                                        <div class="text-xs text-[#64748B]">{{ $r['candidate']->nim }}</div>
+                                        <div class="text-xs text-[#64748B]">{{ $r['candidate']->user->nim }}</div>
                                     </td>
                                     <td class="px-6 py-4 text-center font-mono font-medium text-gray-600">{{ number_format($r['personal_score'] ?? 0, 4) }}</td>
                                     <td class="px-6 py-4 text-center font-mono font-medium text-gray-600">{{ number_format($r['organizational_score'] ?? 0, 4) }}</td>
                                     <td class="px-6 py-4 text-right font-mono text-lg font-black {{ $rank === 1 ? 'text-amber-600' : 'text-[#223872]' }}">
                                         {{ number_format($r['total_score'], 4) }}
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        @php $ann = $r['candidate']->announcement; @endphp
+                                        @if($ann)
+                                            @if($ann->status === 'accepted')
+                                                <div class="flex flex-col items-center gap-2">
+                                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-bold text-emerald-700">
+                                                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                                        Lulus ({{ $ann->assignedDepartment?->name ?? '?' }})
+                                                    </span>
+                                                    <form action="{{ route('admin.decide', $r['candidate']->id) }}" method="POST">
+                                                        @csrf
+                                                        <input type="hidden" name="status" value="rejected">
+                                                        <button type="submit" onclick="return confirm('Ubah status menjadi Ditolak?')" class="rounded-lg bg-gray-100 px-3 py-1.5 text-[10px] font-bold text-[#223872] transition hover:bg-gray-200">Ubah Status</button>
+                                                    </form>
+                                                </div>
+                                            @else
+                                                <div class="flex flex-col items-center gap-2">
+                                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-[10px] font-bold text-red-700">
+                                                        <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                                                        Ditolak
+                                                    </span>
+                                                    <form action="{{ route('admin.decide', $r['candidate']->id) }}" method="POST">
+                                                        @csrf
+                                                        <input type="hidden" name="status" value="accepted">
+                                                        <input type="hidden" name="assigned_department_id" value="{{ $selectedDepartment->id }}">
+                                                        <button type="submit" onclick="return confirm('Ubah status menjadi Lulus untuk {{ $selectedDepartment->name }}?')" class="rounded-lg bg-gray-100 px-3 py-1.5 text-[10px] font-bold text-[#223872] transition hover:bg-gray-200">Ubah Status</button>
+                                                    </form>
+                                                </div>
+                                            @endif
+                                        @else
+                                            <div class="flex items-center justify-center gap-2">
+                                                <form action="{{ route('admin.decide', $r['candidate']->id) }}" method="POST">
+                                                    @csrf
+                                                    <input type="hidden" name="status" value="accepted">
+                                                    <input type="hidden" name="assigned_department_id" value="{{ $selectedDepartment->id }}">
+                                                    <button type="submit" onclick="return confirm('Terima kandidat ini untuk {{ $selectedDepartment->name }}?')" class="rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-emerald-600 transition hover:bg-emerald-500 hover:text-white" title="Terima (Lulus)">
+                                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                                    </button>
+                                                </form>
+                                                <form action="{{ route('admin.decide', $r['candidate']->id) }}" method="POST">
+                                                    @csrf
+                                                    <input type="hidden" name="status" value="rejected">
+                                                    <button type="submit" onclick="return confirm('Tolak kandidat ini?')" class="rounded-lg border border-red-200 bg-red-50 p-2 text-red-600 transition hover:bg-red-500 hover:text-white" title="Tolak">
+                                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach

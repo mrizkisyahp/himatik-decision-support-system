@@ -48,10 +48,10 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="px-4 py-3 font-mono text-[0.68rem] text-[#64748b]">{{ $candidate->nim }}</td>
+                                    <td class="px-4 py-3 font-mono text-[0.68rem] text-[#64748b]">{{ $candidate->user->nim }}</td>
                                     <td class="px-4 py-3">
-                                        <p class="font-bold text-[#333333]">{{ $candidate->prodi }}</p>
-                                        <p class="text-[0.65rem] text-[#64748b]">{{ $candidate->kelas }}</p>
+                                        <p class="font-bold text-[#333333]">{{ $candidate->user->prodi }}</p>
+                                        <p class="text-[0.65rem] text-[#64748b]">{{ $candidate->user->kelas }}</p>
                                     </td>
                                     <td class="px-4 py-3">
                                         <span class="rounded-full bg-[#EEF3FF] px-2.5 py-0.5 text-[0.65rem] font-black text-[#223872]">

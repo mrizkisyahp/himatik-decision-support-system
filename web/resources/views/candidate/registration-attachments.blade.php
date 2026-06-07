@@ -14,19 +14,19 @@
 
         @php
             $attachments = [
-                ['label' => 'Pas Foto Ukuran 3x4', 'path' => $candidate->photo_path],
-                ['label' => 'Bukti Mengikuti Instagram HIMATIK PNJ', 'path' => $candidate->instagram_proof_path],
-                ['label' => 'Bukti Berlanggan ke Youtube HIMATIK PNJ', 'path' => $candidate->youtube_proof_path],
-                ['label' => 'Surat Pernyataan Bukan Dari Ekstra Kampus dan Partai Politik', 'path' => $candidate->political_statement_path],
-                ['label' => 'Tanda Tangan Calon', 'path' => $candidate->candidate_signature_path],
-                ['label' => 'Tanda Tangan Orang Tua Calon', 'path' => $candidate->parent_signature_path],
+                ['label' => 'Pas Foto Ukuran 3x4', 'path' => $candidate->photo_path, 'field' => 'photo_path'],
+                ['label' => 'Bukti Mengikuti Instagram HIMATIK PNJ', 'path' => $candidate->instagram_proof_path, 'field' => 'instagram_proof_path'],
+                ['label' => 'Bukti Berlanggan ke Youtube HIMATIK PNJ', 'path' => $candidate->youtube_proof_path, 'field' => 'youtube_proof_path'],
+                ['label' => 'Surat Pernyataan Bukan Dari Ekstra Kampus dan Partai Politik', 'path' => $candidate->political_statement_path, 'field' => 'political_statement_path'],
+                ['label' => 'Tanda Tangan Calon', 'path' => $candidate->candidate_signature_path, 'field' => 'candidate_signature_path'],
+                ['label' => 'Tanda Tangan Orang Tua Calon', 'path' => $candidate->parent_signature_path, 'field' => 'parent_signature_path'],
             ];
         @endphp
 
         <div class="space-y-4">
             @foreach($attachments as $attachment)
                 @if($attachment['path'])
-                    <a href="{{ asset('storage/' . $attachment['path']) }}" target="_blank" class="flex items-center justify-between p-5 rounded-2xl bg-white border border-[#dce5f8] shadow-sm hover:shadow-md hover:border-[#4A90E2] transition group">
+                    <a href="{{ route('documents.download', [$candidate->id, $attachment['field']]) }}" target="_blank" class="flex items-center justify-between p-5 rounded-2xl bg-white border border-[#dce5f8] shadow-sm hover:shadow-md hover:border-[#4A90E2] transition group">
                         <span class="text-sm font-medium text-[#0F172A] pr-4">{{ $attachment['label'] }}</span>
                         <svg class="h-4 w-4 text-[#64748B] group-hover:text-[#4A90E2] transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
                     </a>

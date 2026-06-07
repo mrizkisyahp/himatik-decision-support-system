@@ -52,7 +52,7 @@
                         <svg class="h-8 w-8 text-[#929aaa]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         <span class="mt-2 text-sm font-medium text-[#929aaa]" id="photo_label">{{ $candidate->photo_path ? 'Foto sudah diunggah — klik untuk mengganti' : 'Tambah Pas Foto (JPG/PNG)' }}</span>
                         <button type="button" id="photo_preview_btn"
-                            data-src="{{ $candidate->photo_path ? asset('storage/' . $candidate->photo_path) : '' }}"
+                            data-src="{{ $candidate->photo_path ? route('documents.download', [$candidate->id, 'photo_path']) : '' }}"
                             data-type="image"
                             data-title="Pas Foto"
                             class="{{ $candidate->photo_path ? 'inline-flex' : 'hidden' }} mt-3 h-8 items-center gap-1.5 rounded-lg bg-[#e2e8f0] px-4 text-xs font-bold text-[#333333] hover:bg-[#cbd5e1]"
@@ -72,7 +72,7 @@
                         <svg class="h-8 w-8 text-[#929aaa]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         <span class="mt-2 text-sm font-medium text-[#929aaa]" id="ig_label">{{ $candidate->instagram_proof_path ? 'Bukti Instagram sudah diunggah — klik untuk mengganti' : 'Tambah Bukti Mengikuti di Instagram (JPG/PNG)' }}</span>
                         <button type="button" id="ig_preview_btn"
-                            data-src="{{ $candidate->instagram_proof_path ? asset('storage/' . $candidate->instagram_proof_path) : '' }}"
+                            data-src="{{ $candidate->instagram_proof_path ? route('documents.download', [$candidate->id, 'instagram_proof_path']) : '' }}"
                             data-type="image"
                             data-title="Bukti Instagram"
                             class="{{ $candidate->instagram_proof_path ? 'inline-flex' : 'hidden' }} mt-3 h-8 items-center gap-1.5 rounded-lg bg-[#e2e8f0] px-4 text-xs font-bold text-[#333333] hover:bg-[#cbd5e1]"
@@ -92,7 +92,7 @@
                         <svg class="h-8 w-8 text-[#929aaa]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         <span class="mt-2 text-sm font-medium text-[#929aaa]" id="yt_label">{{ $candidate->youtube_proof_path ? 'Bukti Youtube sudah diunggah — klik untuk mengganti' : 'Tambah Bukti Berlanggan di Youtube (JPG/PNG)' }}</span>
                         <button type="button" id="yt_preview_btn"
-                            data-src="{{ $candidate->youtube_proof_path ? asset('storage/' . $candidate->youtube_proof_path) : '' }}"
+                            data-src="{{ $candidate->youtube_proof_path ? route('documents.download', [$candidate->id, 'youtube_proof_path']) : '' }}"
                             data-type="image"
                             data-title="Bukti Youtube"
                             class="{{ $candidate->youtube_proof_path ? 'inline-flex' : 'hidden' }} mt-3 h-8 items-center gap-1.5 rounded-lg bg-[#e2e8f0] px-4 text-xs font-bold text-[#333333] hover:bg-[#cbd5e1]"
@@ -117,7 +117,7 @@
                         <span class="mt-2 text-sm font-medium text-[#929aaa]" id="pol_label">{{ $candidate->political_statement_path ? 'Surat Pernyataan terunggah — klik untuk mengganti' : 'Tambah Surat Pernyataan (.PDF)' }}</span>
                         @if($candidate->political_statement_path)
                         <button type="button"
-                            data-src="{{ asset('storage/' . $candidate->political_statement_path) }}"
+                            data-src="{{ route('documents.download', [$candidate->id, 'political_statement_path']) }}"
                             data-type="pdf"
                             data-title="Surat Pernyataan"
                             class="inline-flex mt-3 h-8 items-center gap-1.5 rounded-lg bg-[#e2e8f0] px-4 text-xs font-bold text-[#333333] hover:bg-[#cbd5e1]"

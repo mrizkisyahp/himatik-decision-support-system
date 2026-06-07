@@ -121,6 +121,36 @@ class AdminApiController extends Controller
             'status' => 'required|in:accepted,rejected',
             'assigned_department_id' => 'required_if:status,accepted|exists:departmentsbiro,id|nullable',
         ]);
+
+        if ($request->status === 'accepted') {
+            $departmentId = $request->assigned_department_id;
+            
+            $openRecruitment = \App\Models\OpenRecruitment::where('candidate_type', $candidate->candidate_type)
+                ->where('status', 'open')
+                ->first();
+                
+            if ($openRecruitment) {
+                $quotaRecord = \App\Models\OpenRecruitmentQuota::where('open_recruitment_id', $openRecruitment->id)
+                    ->where('department_id', $departmentId)
+                    ->first();
+                    
+                if ($quotaRecord) {
+                    $acceptedCount = Announcement::where('assigned_department_id', $departmentId)
+                        ->where('status', 'accepted')
+                        ->where('candidate_id', '!=', $candidate->id)
+                        ->count();
+                        
+                    if ($acceptedCount >= $quotaRecord->quota) {
+                        $deptName = \App\Models\Departmentsbiro::find($departmentId)->name;
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Kuota penerimaan untuk departemen {$deptName} sudah penuh (Maks: {$quotaRecord->quota})."
+                        ], 400);
+                    }
+                }
+            }
+        }
+
         $announcement = Announcement::updateOrCreate(
             ['candidate_id' => $candidate->id],
             ['status' => $request->status, 'assigned_department_id' => $request->status === 'accepted' ? $request->assigned_department_id : null]

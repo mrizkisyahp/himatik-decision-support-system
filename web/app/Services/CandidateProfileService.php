@@ -13,15 +13,18 @@ class CandidateProfileService
     public function createFor(User $user, array $data): Candidate
     {
         return DB::transaction(function () use ($user, $data) {
-            $candidate = Candidate::create([
-                'user_id' => $user->id,
-                'candidate_type' => $data['candidate_type'],
+            $user->update([
                 'nickname' => $data['nickname'],
                 'nim' => $data['nim'],
                 'prodi' => $data['prodi'],
                 'kelas' => $data['kelas'],
                 'phone' => $data['phone'],
                 'address' => $data['address'],
+            ]);
+
+            $candidate = Candidate::create([
+                'user_id' => $user->id,
+                'candidate_type' => $data['candidate_type'],
                 'department_choice_reason' => $data['department_choice_reason'],
                 'weakness_description' => $data['weakness_description'],
                 'contribution_plan' => $data['contribution_plan'],
@@ -72,6 +75,6 @@ class CandidateProfileService
 
     private function storeFile(UploadedFile $file, string $directory): string
     {
-        return $file->store($directory, 'public');
+        return $file->store($directory, 'local');
     }
 }

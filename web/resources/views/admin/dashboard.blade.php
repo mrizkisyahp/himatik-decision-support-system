@@ -27,8 +27,8 @@
         $staffCount = $candidateSummary['staff'] ?? 0;
         $bphCount   = $candidateSummary['bph']   ?? 0;
 
-        $sessionProgress = $interviewProgress['total_sessions'] > 0
-            ? round(($interviewProgress['completed_interviews'] / max($interviewProgress['total_sessions'], 1)) * 100)
+        $sessionProgress = $interviewProgress['scheduled_candidates'] > 0
+            ? round(($interviewProgress['completed_interviews'] / max($interviewProgress['scheduled_candidates'], 1)) * 100)
             : 0;
     @endphp
 
@@ -128,9 +128,8 @@
         ════════════════════════════════════════════════════════════════ --}}
         <article class="rounded-2xl border border-[#dce5f8] bg-white p-4 shadow-[0_4px_16px_rgba(34,56,114,0.06)]" aria-label="Interview Progress">
             <h3 class="mb-3 text-sm font-black text-[#111827]">Interview Progress</h3>
-            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 @foreach ([
-                    ['label' => 'Total Sesi',         'value' => $interviewProgress['total_sessions'],        'accent' => false],
                     ['label' => 'Kandidat Terjadwal', 'value' => $interviewProgress['scheduled_candidates'],  'accent' => false],
                     ['label' => 'Interview Selesai',  'value' => $interviewProgress['completed_interviews'],  'accent' => false],
                     ['label' => 'Masih Pending',      'value' => $interviewProgress['pending_interviews'],    'accent' => true],
@@ -250,7 +249,7 @@
                                         <p class="font-bold text-[#111827]">{{ $candidate->user?->name ?? '-' }}</p>
                                         <p class="text-[0.65rem] text-[#64748b]">{{ $candidate->user?->email ?? '' }}</p>
                                     </td>
-                                    <td class="hidden px-4 py-3 font-mono text-[0.68rem] text-[#64748b] sm:table-cell">{{ $candidate->nim }}</td>
+                                    <td class="hidden px-4 py-3 font-mono text-[0.68rem] text-[#64748b] sm:table-cell">{{ $candidate->user->nim }}</td>
                                     <td class="hidden px-4 py-3 text-[#64748b] md:table-cell">{{ $candidate->first_choice_department?->name ?? '-' }}</td>
                                     <td class="hidden px-4 py-3 text-[#64748b] lg:table-cell">{{ $candidate->second_choice_department?->name ?? '-' }}</td>
                                     <td class="px-4 py-3">

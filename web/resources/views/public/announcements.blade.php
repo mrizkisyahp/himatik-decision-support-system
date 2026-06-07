@@ -62,10 +62,10 @@
                                     <tr class="transition hover:bg-[#F4F7FF]">
                                         <td class="px-6 py-4">
                                             <div class="font-bold text-[#111827]">{{ $announcement->candidate->user->name }}</div>
-                                            <div class="mt-1 text-xs text-[#64748B] sm:hidden">{{ $announcement->candidate->nim }}</div>
+                                            <div class="mt-1 text-xs text-[#64748B] sm:hidden">{{ $announcement->candidate->user->nim }}</div>
                                         </td>
                                         <td class="px-6 py-4 hidden sm:table-cell text-[#64748B]">
-                                            {{ $announcement->candidate->nim }}
+                                            {{ $announcement->candidate->user->nim }}
                                         </td>
                                         <td class="px-6 py-4 font-semibold text-[#223872]">
                                             <div class="text-[#111827]">{{ ucfirst($announcement->candidate->candidate_type) }}</div>

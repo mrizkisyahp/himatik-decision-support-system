@@ -70,7 +70,7 @@
                         <tr class="transition hover:bg-gray-50">
                             <td class="px-6 py-4">
                                 <div class="font-bold text-[#111827]">{{ $announcement->candidate->user->name }}</div>
-                                <div class="text-xs text-[#64748B]">{{ $announcement->candidate->nim }}</div>
+                                <div class="text-xs text-[#64748B]">{{ $announcement->candidate->user->nim }}</div>
                             </td>
                             <td class="px-6 py-4">
                                 <ul class="list-inside list-decimal text-xs text-[#333333]">
@@ -172,7 +172,7 @@
 
     function openDecideModal(announcement) {
         const candidate = announcement.candidate;
-        document.getElementById('decideModalName').innerHTML = `Tentukan hasil akhir untuk kandidat <strong>${candidate.user.name}</strong> (${candidate.nim})`;
+        document.getElementById('decideModalName').innerHTML = `Tentukan hasil akhir untuk kandidat <strong>${candidate.user.name}</strong> (${candidate.user.nim})`;
         document.getElementById('decideForm').action = `/admin/decide/${candidate.id}`;
         
         document.getElementById('decide_status').value = announcement.status;

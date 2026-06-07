@@ -99,7 +99,7 @@ class AdminWebController extends Controller
             'total_sessions' => InterviewSchedule::count(),
             'scheduled_candidates' => CandidateInterviewSchedule::count(),
             'completed_interviews' => Candidate::whereIn('status', ['evaluated', 'completed'])->count(),
-            'pending_interviews' => Candidate::whereNotIn('status', ['evaluated', 'completed'])->count(),
+            'pending_interviews' => Candidate::where('status', 'scheduled')->count(),
         ];
 
         $announcementStatus = [
@@ -175,12 +175,12 @@ class AdminWebController extends Controller
         if ($request->filled('search')) {
             $search = trim($request->string('search'));
             $candidateQuery->where(function ($query) use ($search) {
-                $query->where('nim', 'like', "%{$search}%")
-                    ->orWhere('prodi', 'like', "%{$search}%")
-                    ->orWhereHas('user', function ($userQuery) use ($search) {
-                        $userQuery->where('name', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%");
-                    });
+                $query->whereHas('user', function ($userQuery) use ($search) {
+                    $userQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('nim', 'like', "%{$search}%")
+                        ->orWhere('prodi', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
             });
         }
 
@@ -938,6 +938,34 @@ class AdminWebController extends Controller
             'status' => 'required|in:accepted,rejected',
             'assigned_department_id' => 'required_if:status,accepted|exists:departmentsbiro,id|nullable',
         ]);
+
+        if ($request->status === 'accepted') {
+            $departmentId = $request->assigned_department_id;
+            
+            // Get active open recruitment for this candidate type
+            $openRecruitment = OpenRecruitment::where('candidate_type', $candidate->candidate_type)
+                ->where('status', 'open')
+                ->first();
+                
+            if ($openRecruitment) {
+                $quotaRecord = OpenRecruitmentQuota::where('open_recruitment_id', $openRecruitment->id)
+                    ->where('department_id', $departmentId)
+                    ->first();
+                    
+                if ($quotaRecord) {
+                    $acceptedCount = Announcement::where('assigned_department_id', $departmentId)
+                        ->where('status', 'accepted')
+                        ->where('candidate_id', '!=', $candidate->id)
+                        ->count();
+                        
+                    if ($acceptedCount >= $quotaRecord->quota) {
+                        $deptName = \App\Models\Departmentsbiro::find($departmentId)->name;
+                        return back()->with('error', "Kuota penerimaan untuk departemen {$deptName} sudah penuh (Maks: {$quotaRecord->quota}).");
+                    }
+                }
+            }
+        }
+
         Announcement::updateOrCreate(
             ['candidate_id' => $candidate->id],
             [
@@ -945,6 +973,7 @@ class AdminWebController extends Controller
                 'assigned_department_id' => $request->status === 'accepted' ? $request->assigned_department_id : null,
             ]
         );
+        $candidate->update(['status' => 'completed']);
         return back()->with('success', "Decision saved successfully for {$candidate->user->name}.");
     }
 
@@ -953,18 +982,21 @@ class AdminWebController extends Controller
         $search = $request->get('search');
         $statusFilter = $request->get('status');
 
-        $query = Announcement::with(['candidate.user', 'candidate.departmentChoices.department', 'assignedDepartment']);
+        $query = Announcement::with(['candidate.user', 'candidate.departmentChoices.department', 'assignedDepartment'])
+            ->leftJoin('departmentsbiro', 'announcements.assigned_department_id', '=', 'departmentsbiro.id')
+            ->select('announcements.*')
+            ->orderBy('announcements.status', 'asc')
+            ->orderBy('departmentsbiro.name', 'asc');
 
         if ($search) {
             $query->whereHas('candidate.user', function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%");
-            })->orWhereHas('candidate', function ($q) use ($search) {
-                $q->where('nim', 'like', "%{$search}%");
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('nim', 'like', "%{$search}%");
             });
         }
 
         if ($statusFilter) {
-            $query->where('status', $statusFilter);
+            $query->where('announcements.status', $statusFilter);
         }
 
         $announcements = $query->paginate(15)->withQueryString();
@@ -1028,8 +1060,9 @@ class AdminWebController extends Controller
                     if ($search) {
                         $candidatesQuery->where(function ($q) use ($search) {
                             $q->whereHas('user', function ($uq) use ($search) {
-                                $uq->where('name', 'like', '%' . $search . '%');
-                            })->orWhere('nim', 'like', '%' . $search . '%');
+                                $uq->where('name', 'like', '%' . $search . '%')
+                                   ->orWhere('nim', 'like', '%' . $search . '%');
+                            });
                         });
                     }
 
@@ -1041,7 +1074,10 @@ class AdminWebController extends Controller
                             ->whereIn('candidate_id', $candidates->pluck('id'))
                             ->get()
                             ->each(function ($ev) use (&$existingScores) {
-                                $existingScores[$ev->candidate_id][$ev->criteria_id] = $ev->score;
+                                $existingScores[$ev->candidate_id][$ev->criteria_id] = [
+                                    'score' => $ev->score,
+                                    'notes' => $ev->notes,
+                                ];
                             });
                     }
 
@@ -1061,5 +1097,61 @@ class AdminWebController extends Controller
             'error',
             'search'
         ));
+    }
+
+    public function profileMatchingSaveScores(Request $request, Candidate $candidate, Departmentsbiro $department)
+    {
+        $request->validate([
+            'scores' => 'required|array',
+            'scores.*' => 'required|integer|min:1|max:5',
+            'global_notes' => 'nullable|string|max:1000',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $first = true;
+            foreach ($request->scores as $criteriaId => $score) {
+                $criteriaExists = EvaluationCriteria::where('id', $criteriaId)
+                    ->where('department_id', $department->id)
+                    ->exists();
+                if (!$criteriaExists) continue;
+
+                $evaluation = Evaluation::firstOrNew([
+                    'candidate_id' => $candidate->id,
+                    'department_id' => $department->id,
+                    'criteria_id' => $criteriaId,
+                ]);
+                $evaluation->score = $score;
+                if ($first) {
+                    $evaluation->notes = $request->input('global_notes');
+                    $first = false;
+                } else {
+                    $evaluation->notes = null;
+                }
+                $evaluation->interviewer_id = Auth::id(); // Admin also records as interviewer for tracking
+                $evaluation->version = $evaluation->exists ? $evaluation->version + 1 : 1;
+                $evaluation->save();
+            }
+            $candidate->update(['status' => 'evaluated']);
+            DB::commit();
+            return back()->with('success', "Scores for {$candidate->user->name} in {$department->name} saved successfully!");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Failed to save scores. Please try again.');
+        }
+    }
+
+    public function profileMatchingResetScores(Candidate $candidate, Departmentsbiro $department)
+    {
+        Evaluation::where('candidate_id', $candidate->id)
+            ->where('department_id', $department->id)
+            ->delete();
+
+        if ($candidate->evaluations()->count() === 0) {
+            $candidate->update(['status' => 'scheduled']);
+            $candidate->announcement()->delete();
+        }
+
+        return back()->with('success', "Scores for {$candidate->user->name} have been reset.");
     }
 }

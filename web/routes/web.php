@@ -23,6 +23,7 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthWebController::class, 'logout'])->name('logout');
+    Route::get('/documents/download/{candidate}/{field}', [CandidateWebController::class, 'downloadDocument'])->name('documents.download');
 
     Route::get('/profile', [\App\Http\Controllers\Web\ProfileWebController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [\App\Http\Controllers\Web\ProfileWebController::class, 'update'])->name('profile.update');

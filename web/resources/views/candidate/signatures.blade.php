@@ -56,7 +56,7 @@
 
                     @if($candidate->candidate_signature_path)
                     <div class="mb-3 flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
-                        <img src="{{ asset('storage/' . $candidate->candidate_signature_path) }}" alt="Tanda Tangan Calon" class="h-10 w-auto object-contain">
+                        <img src="{{ route('documents.download', [$candidate->id, 'candidate_signature_path']) }}" alt="Tanda Tangan Calon" class="h-10 w-auto object-contain">
                         <span class="text-sm font-medium text-green-700">Tanda tangan sudah tersimpan</span>
                     </div>
                     @endif
@@ -86,7 +86,7 @@
 
                     @if($candidate->parent_signature_path)
                     <div class="mb-3 flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
-                        <img src="{{ asset('storage/' . $candidate->parent_signature_path) }}" alt="Tanda Tangan Orang Tua" class="h-10 w-auto object-contain">
+                        <img src="{{ route('documents.download', [$candidate->id, 'parent_signature_path']) }}" alt="Tanda Tangan Orang Tua" class="h-10 w-auto object-contain">
                         <span class="text-sm font-medium text-green-700">Tanda tangan orang tua sudah tersimpan</span>
                     </div>
                     @endif

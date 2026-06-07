@@ -44,8 +44,8 @@ class PublicAnnouncementApiController extends Controller
             ->map(function ($announcement) {
                 return [
                     'nama' => $announcement->candidate->user->name,
-                    'nim' => $announcement->candidate->nim,
-                    'prodi' => $announcement->candidate->prodi,
+                    'nim' => $announcement->candidate->user->nim,
+                    'prodi' => $announcement->candidate->user->prodi,
                     'assigned_department' => $announcement->assignedDepartment->name ?? 'N/A',
                 ];
             });

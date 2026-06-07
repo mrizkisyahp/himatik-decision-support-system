@@ -159,24 +159,31 @@ class InterviewerApiController extends Controller
         $request->validate([
             'scores' => 'required|array',
             'scores.*' => 'required|integer|min:1|max:5',
+            'global_notes' => 'nullable|string|max:1000',
         ]);
 
         DB::beginTransaction();
 
         try {
+            $first = true;
             foreach ($request->scores as $criteriaId => $score) {
                 $criteriaExists = EvaluationCriteria::where('id', $criteriaId)
                     ->where('department_id', $department->id)
                     ->exists();
-                if (!$criteriaExists) {
-                    continue;
-                }
+                if (!$criteriaExists) continue;
+
                 $evaluation = Evaluation::firstOrNew([
                     'candidate_id' => $candidate->id,
                     'department_id' => $department->id,
                     'criteria_id' => $criteriaId,
                 ]);
                 $evaluation->score = $score;
+                if ($first) {
+                    $evaluation->notes = $request->input('global_notes');
+                    $first = false;
+                } else {
+                    $evaluation->notes = null;
+                }
                 $evaluation->interviewer_id = $request->user()->id;
                 $evaluation->version = $evaluation->exists ? $evaluation->version + 1 : 1;
                 $evaluation->save();
