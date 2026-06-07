@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AdminApiController;
 use App\Http\Controllers\Api\AuthApiController;
 use App\Http\Controllers\Api\CandidateApiController;
+use App\Http\Controllers\Api\ChatbotController;
 use App\Http\Controllers\Api\InterviewerApiController;
 use App\Http\Controllers\Api\LandingApiController;
 use App\Http\Controllers\Api\PublicAnnouncementApiController;
@@ -13,6 +14,7 @@ Route::get('/departments', [CandidateApiController::class, 'getDepartments']);
 Route::post('/register', [CandidateApiController::class, 'register']);
 Route::post('/login', [AuthApiController::class, 'login']);
 Route::get('/announcements', [PublicAnnouncementApiController::class, 'getAcceptedList']);
+Route::post('/chatbot', [ChatbotController::class, 'public'])->middleware('throttle:10,1');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [CandidateApiController::class, 'me']);
@@ -35,6 +37,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/interviewer/decide/{candidate}', [AdminApiController::class, 'decideCandidate']);
 
     Route::middleware('role:admin')->group(function () {
+        Route::post('/chatbot/admin', [ChatbotController::class, 'admin'])->middleware('throttle:10,1');
+
         Route::get('/admin/stats', [AdminApiController::class, 'getStats']);
         Route::get('/admin/rankings/{department}', [AdminApiController::class, 'getRankings']);
         Route::post('/admin/decide/{candidate}', [AdminApiController::class, 'decideCandidate']);

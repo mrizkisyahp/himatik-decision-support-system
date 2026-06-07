@@ -431,6 +431,8 @@
         </div>
     </footer>
 
+    <x-chatbot-widget />
+
     <script>
         const menuButton = document.querySelector('[data-mobile-menu-button]');
         const mobileMenu = document.querySelector('[data-mobile-menu]');
