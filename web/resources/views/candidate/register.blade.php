@@ -38,9 +38,6 @@
                     <p class="mt-2 text-[0.8rem] leading-5 text-[#929aaa]">
                         Pastikan informasi identitas dan kontak yang kamu masukkan valid serta aktif.
                     </p>
-                    <span class="mt-3 inline-flex rounded-full bg-[#223872]/10 px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-[#223872]">
-                        Open Recruitment {{ strtoupper(old('candidate_type', $candidateType ?? 'staff')) }}
-                    </span>
                 </div>
 
                 @if ($errors->any())

@@ -10,15 +10,15 @@ class InterviewSchedule extends Model
 
     protected $fillable = [
         'department_id',
-        'session_name',
-        'scheduled_at',
-        'location',
-        'is_active',
+        'date',
+        'start_time',
+        'end_time',
+        'is_blocked',
     ];
 
     protected $casts = [
-        'scheduled_at' => 'datetime',
-        'is_active' => 'boolean',
+        'date' => 'date',
+        'is_blocked' => 'boolean',
     ];
 
     public function department()
@@ -43,9 +43,5 @@ class InterviewSchedule extends Model
         );
     }
 
-    public function interviewers()
-    {
-        return $this->belongsToMany(User::class, 'interviewer_schedule');
-    }
 
 }

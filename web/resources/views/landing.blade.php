@@ -36,10 +36,28 @@
                     <a href="#visi-misi" class="transition hover:text-white">Visi Misi</a>
                     <a href="#departemen-biro" class="transition hover:text-white">Departemen/Biro</a>
                     <a href="#bergabung" class="transition hover:text-white">Bergabung</a>
-                    <a href="{{ route('login') }}"
-                        class="rounded-full bg-white/95 px-4 py-2 font-bold text-[#223872] shadow-lg shadow-black/10 transition hover:bg-white">
-                        Masuk Portal
-                    </a>
+                    <a href="{{ route('public.announcements') }}" class="transition hover:text-white">Pengumuman</a>
+                    @auth
+                        @php
+                            $dashboardRoute = 'dashboard';
+                            if (auth()->user()->role === 'admin') {
+                                $dashboardRoute = 'admin.dashboard';
+                            } elseif (auth()->user()->role === 'interviewer') {
+                                $dashboardRoute = 'interviewer.dashboard';
+                            } elseif (auth()->user()->role === 'candidate') {
+                                $dashboardRoute = 'candidate.dashboard';
+                            }
+                        @endphp
+                        <a href="{{ route($dashboardRoute) }}"
+                            class="rounded-full bg-white/95 px-4 py-2 font-bold text-[#223872] shadow-lg shadow-black/10 transition hover:bg-white">
+                            Dashboard
+                        </a>
+                    @else
+                        <a href="{{ route('login') }}"
+                            class="rounded-full bg-white/95 px-4 py-2 font-bold text-[#223872] shadow-lg shadow-black/10 transition hover:bg-white">
+                            Masuk Portal
+                        </a>
+                    @endauth
                 </div>
 
                 <button type="button" data-mobile-menu-button
@@ -64,9 +82,24 @@
                     <a href="#departemen-biro"
                         class="rounded-2xl px-4 py-3 transition hover:bg-white/10">Departemen/Biro</a>
                     <a href="#bergabung" class="rounded-2xl px-4 py-3 transition hover:bg-white/10">Bergabung</a>
-                    <a href="{{ route('login') }}"
-                        class="mt-2 rounded-2xl bg-white px-4 py-3 text-center font-bold text-[#223872]">Masuk
-                        Portal</a>
+                    <a href="{{ route('public.announcements') }}" class="rounded-2xl px-4 py-3 transition hover:bg-white/10">Pengumuman</a>
+                    @auth
+                        @php
+                            $dashboardRoute = 'dashboard';
+                            if (auth()->user()->role === 'admin') {
+                                $dashboardRoute = 'admin.dashboard';
+                            } elseif (auth()->user()->role === 'interviewer') {
+                                $dashboardRoute = 'interviewer.dashboard';
+                            } elseif (auth()->user()->role === 'candidate') {
+                                $dashboardRoute = 'candidate.dashboard';
+                            }
+                        @endphp
+                        <a href="{{ route($dashboardRoute) }}"
+                            class="mt-2 rounded-2xl bg-white px-4 py-3 text-center font-bold text-[#223872]">Dashboard</a>
+                    @else
+                        <a href="{{ route('login') }}"
+                            class="mt-2 rounded-2xl bg-white px-4 py-3 text-center font-bold text-[#223872]">Masuk Portal</a>
+                    @endauth
                 </div>
             </div>
         </nav>
@@ -94,14 +127,35 @@
                     </p>
 
                     <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-                        <a href="{{ route('login') }}"
-                            class="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3.5 text-sm font-extrabold text-[#223872] shadow-xl shadow-black/15 transition hover:-translate-y-0.5 hover:bg-[#F4F7FF]">
-                            Masuk Portal
-                            <svg class="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4"
-                                    d="M13 7l5 5m0 0-5 5m5-5H6" />
-                            </svg>
-                        </a>
+                        @auth
+                            @php
+                                $dashboardRoute = 'dashboard';
+                                if (auth()->user()->role === 'admin') {
+                                    $dashboardRoute = 'admin.dashboard';
+                                } elseif (auth()->user()->role === 'interviewer') {
+                                    $dashboardRoute = 'interviewer.dashboard';
+                                } elseif (auth()->user()->role === 'candidate') {
+                                    $dashboardRoute = 'candidate.dashboard';
+                                }
+                            @endphp
+                            <a href="{{ route($dashboardRoute) }}"
+                                class="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3.5 text-sm font-extrabold text-[#223872] shadow-xl shadow-black/15 transition hover:-translate-y-0.5 hover:bg-[#F4F7FF]">
+                                Dashboard
+                                <svg class="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4"
+                                        d="M13 7l5 5m0 0-5 5m5-5H6" />
+                                </svg>
+                            </a>
+                        @else
+                            <a href="{{ route('login') }}"
+                                class="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3.5 text-sm font-extrabold text-[#223872] shadow-xl shadow-black/15 transition hover:-translate-y-0.5 hover:bg-[#F4F7FF]">
+                                Masuk Portal
+                                <svg class="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4"
+                                        d="M13 7l5 5m0 0-5 5m5-5H6" />
+                                </svg>
+                            </a>
+                        @endauth
                         <a href="#departemen-biro"
                             class="inline-flex items-center justify-center rounded-2xl border border-white/25 bg-white/10 px-6 py-3.5 text-sm font-extrabold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20">
                             Lihat Departemen/Biro

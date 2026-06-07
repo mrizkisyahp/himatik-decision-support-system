@@ -51,17 +51,17 @@ class AuthWebController extends Controller
         if ($user->role === 'admin') {
             return redirect()->route('admin.dashboard');
         } elseif ($user->role === 'interviewer') {
-            return redirect()->route('interviewer.schedule');
+            return redirect()->route('interviewer.dashboard');
         } elseif ($user->role === 'candidate') {
             if (!$user->email_verified_at) {
                 return redirect()->route('candidate.otp.view');
             }
 
-            if (!$user->candidate) {
+            if (!$user->nim) {
                 return redirect()->route('candidate.register.view');
             }
 
-            return redirect()->route('candidate.schedule.view');
+            return redirect()->route('candidate.dashboard');
         }
 
         return redirect('/');

@@ -16,6 +16,12 @@ return new class extends Migration {
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('nim', 10)->nullable()->unique();
+            $table->string('nickname')->nullable();
+            $table->string('prodi')->nullable();
+            $table->string('kelas', 50)->nullable();
+            $table->string('phone', 20)->nullable();
+            $table->text('address')->nullable();
             $table->enum('role', ['admin', 'interviewer', 'candidate'])->default('candidate');
             $table->rememberToken();
             $table->timestamps();

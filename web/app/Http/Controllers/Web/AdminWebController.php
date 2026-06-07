@@ -22,7 +22,6 @@ use App\Services\ProfileMatchingService;
 use App\Support\SpkCriteriaDefaults;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class AdminWebController extends Controller
@@ -130,6 +129,17 @@ class AdminWebController extends Controller
             ['label' => 'Profile Matching', 'description' => 'SPK dan ranking', 'route' => 'admin.profile-matching'],
         ])->filter(fn ($action) => Route::has($action['route']))->values();
 
+        $todaySchedules = \App\Models\InterviewSchedule::whereDate('date', today())
+            ->whereHas('booking')
+            ->with(['booking.candidate.user', 'department'])
+            ->orderBy('start_time')
+            ->get();
+
+        $topCandidates = \App\Models\Candidate::whereHas('evaluations')
+            ->with('user')
+            ->take(3)
+            ->get();
+
         return view('admin.dashboard', compact(
             'stats',
             'candidateSummary',
@@ -141,13 +151,10 @@ class AdminWebController extends Controller
             'interviewProgress',
             'announcementStatus',
             'openRecruitment',
-            'quickActions'
+            'quickActions',
+            'todaySchedules',
+            'topCandidates'
         ));
-    }
-
-    public function stubPage(string $page)
-    {
-        return $this->stubFromKey($page);
     }
 
     public function registrations(Request $request)
@@ -611,11 +618,6 @@ class AdminWebController extends Controller
     // RANKINGS
     // ─────────────────────────────────────────────────────────────────
 
-    public function showRankings(Departmentsbiro $department)
-    {
-        return $this->stub('Profile Matching', 'Preview halaman ranking dan hasil perhitungan Profile Matching untuk setiap departemen/biro.');
-    }
-
     // ─────────────────────────────────────────────────────────────────
     // EVALUATION CRITERIA CRUD
     // ─────────────────────────────────────────────────────────────────
@@ -930,61 +932,6 @@ class AdminWebController extends Controller
             ->with('success', "Berhasil menghapus {$deleted} slot jadwal yang kosong.");
     }
 
-    // ─────────────────────────────────────────────────────────────────
-    // INTERVIEWERS CRUD
-    // ─────────────────────────────────────────────────────────────────
-
-    public function listInterviewers()
-    {
-        return $this->stub('Account', 'Preview pengelolaan akun admin dan interviewer.');
-    }
-
-    public function storeInterviewer(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8',
-        ]);
-
-        User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'interviewer',
-        ]);
-
-        return back()->with('success', "Interviewer '{$request->name}' created successfully!");
-    }
-
-    public function updateInterviewer(Request $request, User $user)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'password' => 'nullable|string|min:8',
-        ]);
-
-        $data = ['name' => $request->name, 'email' => $request->email];
-        if ($request->filled('password')) {
-            $data['password'] = Hash::make($request->password);
-        }
-
-        $user->update($data);
-
-        return back()->with('success', "Interviewer '{$user->name}' updated successfully!");
-    }
-
-    public function destroyInterviewer(User $user)
-    {
-        $user->delete();
-        return back()->with('success', 'Interviewer account deleted successfully.');
-    }
-
-    // ─────────────────────────────────────────────────────────────────
-    // DECISIONS & ANNOUNCEMENTS
-    // ─────────────────────────────────────────────────────────────────
-
     public function decideCandidate(Request $request, Candidate $candidate)
     {
         $request->validate([
@@ -1114,287 +1061,5 @@ class AdminWebController extends Controller
             'error',
             'search'
         ));
-    }
-    // ─────────────────────────────────────────────────────────────────
-    // DSS PROFILE MATCHING — TESTING PAGE (SANDBOX)
-    // ─────────────────────────────────────────────────────────────────
-
-    public function testing(Request $request)
-    {
-        $departments = Departmentsbiro::with('evaluationCriteria')->get();
-
-        $selectedDepartment = null;
-        $criteria = collect();
-        $rankings = [];
-        $candidates = collect();
-        $existingScores = []; // [candidate_id][criteria_id] => score
-        $error = null;
-        $search = $request->get('search', '');
-
-        if ($request->filled('department_id')) {
-            $selectedDepartment = Departmentsbiro::with('evaluationCriteria')
-                ->find($request->department_id);
-
-            if (!$selectedDepartment) {
-                $error = 'Department not found.';
-            } else {
-                $criteria = $selectedDepartment->evaluationCriteria()
-                    ->where('is_active', true)
-                    ->orderBy('sort_order')
-                    ->orderBy('id')
-                    ->get();
-
-                if ($criteria->isEmpty()) {
-                    $error = "Department \"{$selectedDepartment->name}\" has no evaluation criteria defined yet. Add criteria via Admin → Criteria.";
-                } else {
-                    $candidatesQuery = Candidate::with('user', 'departmentChoices.department')
-                        ->whereHas('departmentChoices', function ($q) use ($selectedDepartment) {
-                            $q->where('departmentsbiro_id', $selectedDepartment->id);
-                        });
-
-                    if ($search) {
-                        $candidatesQuery->where(function ($q) use ($search) {
-                            $q->whereHas('user', function ($uq) use ($search) {
-                                $uq->where('name', 'like', '%' . $search . '%');
-                            })->orWhere('nim', 'like', '%' . $search . '%');
-                        });
-                    }
-
-                    $candidates = $candidatesQuery->paginate(5);
-
-                    if ($candidates->isNotEmpty()) {
-                        Evaluation::where('department_id', $selectedDepartment->id)
-                            ->whereIn('candidate_id', $candidates->pluck('id'))
-                            ->get()
-                            ->each(function ($ev) use (&$existingScores) {
-                                $existingScores[$ev->candidate_id][$ev->criteria_id] = $ev->score;
-                            });
-                    }
-
-                    $rankings = $this->dss->getDepartmentRankings($selectedDepartment);
-                }
-            }
-        }
-
-        return view('admin.testing', compact(
-            'departments',
-            'selectedDepartment',
-            'criteria',
-            'rankings',
-            'candidates',
-            'existingScores',
-            'error',
-            'search'
-        ));
-    }
-
-
-    /**
-     * CRUD: Save (upsert) evaluation scores for a candidate in a department.
-     * Admin acts as the evaluator (interviewer_id = auth()->id()).
-     */
-    public function testingSaveScores(Request $request, Candidate $candidate, Departmentsbiro $department)
-    {
-        $request->validate([
-            'scores' => 'required|array',
-            'scores.*' => 'nullable|integer|min:1|max:5',
-        ]);
-
-        $validCriteriaIds = $department->evaluationCriteria()->where('is_active', true)->pluck('id')->toArray();
-
-        foreach ($request->scores as $criteriaId => $score) {
-            if ($score === null) {
-                continue; // Skip empty fields to avoid overwriting with null
-            }
-            if (!in_array((int) $criteriaId, $validCriteriaIds)) {
-                continue; // Reject criteria not belonging to this department
-            }
-
-            $evaluation = Evaluation::firstOrNew([
-                'candidate_id' => $candidate->id,
-                'department_id' => $department->id,
-                'criteria_id' => (int) $criteriaId,
-            ]);
-            $evaluation->score = (int) $score;
-            $evaluation->interviewer_id = auth()->id();
-            $evaluation->version = $evaluation->exists ? $evaluation->version + 1 : 1;
-            $evaluation->save();
-        }
-
-        return redirect()
-            ->route('admin.testing', ['department_id' => $department->id])
-            ->with('success', "Skor untuk \"" . ($candidate->user->name ?? 'Kandidat') . "\" berhasil disimpan!");
-    }
-
-    /**
-     * CRUD: Delete all evaluation scores for a candidate in a department.
-     */
-    public function testingResetScores(Candidate $candidate, Departmentsbiro $department)
-    {
-        $deleted = Evaluation::where('candidate_id', $candidate->id)
-            ->where('department_id', $department->id)
-            ->delete();
-
-        return redirect()
-            ->route('admin.testing', ['department_id' => $department->id])
-            ->with('info', "Semua skor untuk \"" . ($candidate->user->name ?? 'Kandidat') . "\" telah dihapus. ({$deleted} record)");
-    }
-
-    /**
-     * CRUD: Create a new User (role: candidate) + Candidate record for testing.
-     * photo_path is set to a placeholder since it is NOT nullable in the DB.
-     */
-    public function testingStoreCandidate(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'nim' => 'required|string|unique:candidates,nim',
-            'prodi' => 'required|in:Teknik Informatika,Teknik Multimedia dan Jaringan,Teknik Multimedia dan Digital',
-            'kelas' => 'required|string|max:20',
-            'phone' => 'required|string|max:20',
-            'first_choice_id' => 'required|exists:departmentsbiro,id',
-            'second_choice_id' => 'nullable|exists:departmentsbiro,id|different:first_choice_id',
-            'department_id' => 'required|exists:departmentsbiro,id',
-        ]);
-
-        \DB::transaction(function () use ($request) {
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => bcrypt('testing123'), // default password for test accounts
-                'role' => 'candidate',
-            ]);
-
-            $candidate = Candidate::create([
-                'user_id' => $user->id,
-                'candidate_type' => 'staff',
-                'nim' => $request->nim,
-                'prodi' => $request->prodi,
-                'kelas' => $request->kelas,
-                'phone' => $request->phone,
-                'photo_path' => 'testing/placeholder.jpg', // placeholder — required field
-                'status' => 'registered',
-            ]);
-            $candidate->departmentChoices()->create([
-                'departmentsbiro_id' => $request->first_choice_id,
-                'choice_order' => 1,
-            ]);
-            if ($request->second_choice_id) {
-                $candidate->departmentChoices()->create([
-                    'departmentsbiro_id' => $request->second_choice_id,
-                    'choice_order' => 2,
-                ]);
-            }
-        });
-
-        return redirect()
-            ->route('admin.testing', ['department_id' => $request->department_id])
-            ->with('success', "Kandidat \"{$request->name}\" berhasil ditambahkan! (password default: testing123)");
-    }
-
-    /**
-     * CRUD: Update candidate profile & their linked user name/email.
-     */
-    public function testingUpdateCandidate(Request $request, Candidate $candidate)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $candidate->user_id,
-            'nim' => 'required|string|unique:candidates,nim,' . $candidate->id,
-            'prodi' => 'required|in:Teknik Informatika,Teknik Multimedia dan Jaringan,Teknik Multimedia dan Digital',
-            'kelas' => 'required|string|max:20',
-            'phone' => 'required|string|max:20',
-            'first_choice_id' => 'required|exists:departmentsbiro,id',
-            'second_choice_id' => 'nullable|exists:departmentsbiro,id|different:first_choice_id',
-            'department_id' => 'required|exists:departmentsbiro,id',
-        ]);
-
-        $candidate->user->update([
-            'name' => $request->name,
-            'email' => $request->email,
-        ]);
-
-        $candidate->update([
-            'nim' => $request->nim,
-            'prodi' => $request->prodi,
-            'kelas' => $request->kelas,
-            'phone' => $request->phone,
-        ]);
-        $candidate->departmentChoices()->delete();
-        $candidate->departmentChoices()->create([
-            'departmentsbiro_id' => $request->first_choice_id,
-            'choice_order' => 1,
-        ]);
-        if ($request->second_choice_id) {
-            $candidate->departmentChoices()->create([
-                'departmentsbiro_id' => $request->second_choice_id,
-                'choice_order' => 2,
-            ]);
-        }
-
-        return redirect()
-            ->route('admin.testing', ['department_id' => $request->department_id])
-            ->with('success', "Kandidat \"{$request->name}\" berhasil diperbarui!");
-    }
-
-    /**
-     * CRUD: Delete a candidate and their linked User account.
-     * Also cascades to evaluations via DB foreign key.
-     */
-    public function testingDestroyCandidate(Candidate $candidate)
-    {
-        $deptId = $candidate->first_choice_department?->id;
-        $name = $candidate->user->name ?? 'Kandidat';
-
-        // Delete the user — candidate is cascade-deleted via FK
-        $candidate->user->delete();
-
-        return redirect()
-            ->route('admin.testing', ['department_id' => $deptId])
-            ->with('success', "Kandidat \"{$name}\" dan akun user-nya berhasil dihapus.");
-    }
-
-    private function stubFromKey(string $key)
-    {
-        $pages = [
-            'registrations' => ['Pendaftaran', 'Preview daftar kandidat yang mendaftar dan status kelengkapan profil.'],
-            'open-recruitment' => ['Open Recruitment', 'Preview pengaturan periode, jenis pendaftaran, dan status publikasi open recruitment.'],
-            'announcements' => ['Pengumuman', 'Preview pengelolaan publikasi hasil rekrutmen dan status kandidat.'],
-            'profile-matching' => ['Profile Matching', 'Preview halaman perhitungan, ranking, dan hasil SPK Profile Matching.'],
-            'default-criteria' => ['Default Criteria', 'Preview konfigurasi kriteria default, target score, aspect, dan factor type.'],
-            'departments' => ['Departemen & Biro', 'Preview master data departemen dan biro HIMATIK PNJ.'],
-            'accounts' => ['Account', 'Preview pengelolaan akun admin dan interviewer.'],
-        ];
-
-        abort_unless(isset($pages[$key]), 404);
-
-        return $this->stub($pages[$key][0], $pages[$key][1]);
-    }
-
-    private function stub(string $title, string $description)
-    {
-        return view('admin.stub', [
-            'title' => $title,
-            'description' => $description,
-            'tableTitle' => "Placeholder {$title}",
-            'cards' => [
-                [
-                    'label' => 'Rencana',
-                    'title' => 'Konten Utama',
-                    'text' => 'Area ini akan menampilkan data utama setelah backend halaman disambungkan.',
-                ],
-                [
-                    'label' => 'Aksi',
-                    'title' => 'Kontrol Admin',
-                    'text' => 'Form, tombol, dan aksi akan dibuat saat kebutuhan backend sudah dikunci.',
-                ],
-                [
-                    'label' => 'Status',
-                    'title' => 'Belum Aktif',
-                    'text' => 'Stub ini sengaja tidak membaca atau menulis data agar aman untuk iterasi UI.',
-                ],
-            ],
-        ]);
     }
 }

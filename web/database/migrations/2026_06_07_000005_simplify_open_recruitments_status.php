@@ -17,9 +17,11 @@ return new class extends Migration
             ->where('status', 'draft')
             ->update(['status' => 'closed']);
 
-        Schema::table('open_recruitments', function (Blueprint $table) {
-            $table->dropColumn('is_public');
-        });
+        if (Schema::hasColumn('open_recruitments', 'is_public')) {
+            Schema::table('open_recruitments', function (Blueprint $table) {
+                $table->dropColumn('is_public');
+            });
+        }
 
         DB::statement("ALTER TABLE open_recruitments MODIFY status ENUM('open', 'closed') NOT NULL DEFAULT 'closed'");
     }

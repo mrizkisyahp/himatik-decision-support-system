@@ -654,8 +654,8 @@
                     <div class="hero-stat-label">Groups</div>
                 </div>
                 <div class="hero-stat">
-                    <div class="hero-stat-num">32</div>
-                    <div class="hero-stat-label">API Endpoints</div>
+                    <div class="hero-stat-num">{{ collect($groups)->flatten(1)->filter(fn($route) => !empty($route['post_fields']) || !empty($route['also_posts']))->count() }}</div>
+                    <div class="hero-stat-label">Forms</div>
                 </div>
                 <div class="hero-stat">
                     <div class="hero-stat-num">4</div>

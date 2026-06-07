@@ -11,12 +11,6 @@ class Candidate extends Model
     protected $fillable = [
         'user_id',
         'candidate_type',
-        'nickname',
-        'nim',
-        'prodi',
-        'kelas',
-        'phone',
-        'address',
         'department_choice_reason',
         'weakness_description',
         'contribution_plan',
@@ -33,6 +27,13 @@ class Candidate extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function getNimAttribute() { return $this->user?->nim; }
+    public function getNicknameAttribute() { return $this->user?->nickname; }
+    public function getProdiAttribute() { return $this->user?->prodi; }
+    public function getKelasAttribute() { return $this->user?->kelas; }
+    public function getPhoneAttribute() { return $this->user?->phone; }
+    public function getAddressAttribute() { return $this->user?->address; }
 
     public function firstChoice()
     {

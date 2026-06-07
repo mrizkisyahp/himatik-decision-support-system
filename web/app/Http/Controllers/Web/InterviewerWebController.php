@@ -9,26 +9,155 @@ use App\Models\EvaluationCriteria;
 use App\Models\Evaluation;
 use App\Models\Announcement;
 use App\Models\DefaultEvaluationCriteria;
+use App\Services\ProfileMatchingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class InterviewerWebController extends Controller
 {
-    // Show dashboard interview schedules
-    public function index()
-    {
-        $interviewer = Auth::user() ?: \App\Models\User::where('role', 'interviewer')->first() ?: \App\Models\User::first();
+    protected $dss;
 
-        $schedules = collect();
-        if ($interviewer) {
-            $schedules = $interviewer->interviewSchedules()
-                ->with(['department', 'booking.candidate.user', 'booking.candidate.departmentChoices.department'])
-                ->orderBy('scheduled_at', 'asc')
-                ->get();
+    public function __construct(ProfileMatchingService $dss)
+    {
+        $this->dss = $dss;
+    }
+    public function dashboard()
+    {
+        $interviewer = Auth::user();
+        $department = $this->getDepartment();
+
+        // Daftar Wawancara Hari Ini
+        $todaySchedules = \App\Models\InterviewSchedule::where('department_id', $department->id)
+            ->whereDate('date', today())
+            ->whereHas('booking')
+            ->with(['booking.candidate.user'])
+            ->orderBy('start_time')
+            ->get();
+
+        // Top 3 Kandidat (Mock for now until SpkResult is fully integrated)
+        $topCandidates = \App\Models\Candidate::whereHas('evaluations', function($q) use ($department) {
+            $q->where('department_id', $department->id);
+        })->with('user')->take(3)->get();
+
+        return view('interviewer.dashboard', compact('todaySchedules', 'topCandidates', 'department'));
+    }
+
+    public function registrations()
+    {
+        $candidates = \App\Models\Candidate::with(['user', 'departmentChoices.department'])->latest()->get();
+        return view('interviewer.registrations', compact('candidates'));
+    }
+
+    public function schedules(Request $request)
+    {
+        $department = $this->getDepartment();
+        $activeDepartmentId = $request->get('department_id', $department->id);
+
+        $departments = \App\Models\Departmentsbiro::where('is_active', true)->get();
+
+        $query = \App\Models\InterviewSchedule::with(['booking.candidate.user', 'department'])
+            ->orderBy('date', 'asc')
+            ->orderBy('start_time', 'asc');
+
+        if ($activeDepartmentId) {
+            $query->where('department_id', $activeDepartmentId);
         }
 
-        return view('interviewer.dashboard', compact('schedules'));
+        $allSchedules = $query->get();
+
+        $dates = $allSchedules->pluck('date')->unique()->sort()->values();
+        $timeSlots = $allSchedules->map(function ($sch) {
+            return $sch->start_time . ' - ' . $sch->end_time;
+        })->unique()->sort()->values();
+
+        $schedules = [];
+        foreach ($allSchedules as $sch) {
+            $timeKey = $sch->start_time . ' - ' . $sch->end_time;
+            $dateKey = is_string($sch->date) ? \Carbon\Carbon::parse($sch->date)->format('Y-m-d') : $sch->date->format('Y-m-d');
+            $schedules[$dateKey][$timeKey] = $sch;
+        }
+
+        return view('interviewer.schedules', compact('departments', 'activeDepartmentId', 'schedules', 'dates', 'timeSlots', 'department'));
+    }
+
+    public function toggleScheduleBlock(\App\Models\InterviewSchedule $schedule)
+    {
+        $department = $this->getDepartment();
+        if ($schedule->department_id !== $department->id) {
+            if (request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Anda hanya bisa mengubah jadwal departemen Anda sendiri.'], 403);
+            }
+            abort(403, 'Anda hanya bisa mengubah jadwal departemen Anda sendiri.');
+        }
+
+        $schedule->update(['is_blocked' => !$schedule->is_blocked]);
+        
+        if (request()->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
+        return back()->with('success', 'Status jadwal berhasil diubah.');
+    }
+
+    public function profileMatching(Request $request)
+    {
+        $department = $this->getDepartment();
+        $search = $request->get('search', '');
+        $error = null;
+
+        $criteria = $department->evaluationCriteria()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        if ($criteria->isEmpty()) {
+            $error = "Departemen \"{$department->name}\" belum memiliki kriteria evaluasi. Tambahkan melalui Kelola Kriteria.";
+            $candidates = collect();
+            $existingScores = [];
+            $rankings = [];
+        } else {
+            $candidatesQuery = Candidate::with('user', 'departmentChoices.department')
+                ->whereHas('departmentChoices', function ($q) use ($department) {
+                    $q->where('departmentsbiro_id', $department->id);
+                });
+
+            if ($search) {
+                $candidatesQuery->where(function ($q) use ($search) {
+                    $q->whereHas('user', function ($uq) use ($search) {
+                        $uq->where('name', 'like', '%' . $search . '%');
+                    })->orWhere('nim', 'like', '%' . $search . '%');
+                });
+            }
+
+            $candidates = $candidatesQuery->paginate(5);
+            $existingScores = [];
+
+            if ($candidates->isNotEmpty()) {
+                Evaluation::where('department_id', $department->id)
+                    ->whereIn('candidate_id', $candidates->pluck('id'))
+                    ->get()
+                    ->each(function ($ev) use (&$existingScores) {
+                        $existingScores[$ev->candidate_id][$ev->criteria_id] = $ev->score;
+                    });
+            }
+
+            $rankings = $this->dss->getDepartmentRankings($department);
+        }
+
+        // Variable remapping to match the blade template
+        $selectedDepartment = $department;
+
+        return view('interviewer.profile-matching', compact(
+            'department',
+            'selectedDepartment',
+            'criteria',
+            'rankings',
+            'candidates',
+            'existingScores',
+            'error',
+            'search'
+        ));
     }
 
     // Show grading form
@@ -80,12 +209,30 @@ class InterviewerWebController extends Controller
             }
             $candidate->update(['status' => 'evaluated']);
             DB::commit();
-            return redirect()->route('interviewer.schedule')
-                ->with('success', "Scores for {$candidate->user->name} in {$department->name} saved successfully!");
+            return back()->with('success', "Scores for {$candidate->user->name} in {$department->name} saved successfully!");
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Failed to save scores. Please try again.');
         }
+    }
+
+    public function profileMatchingResetScores(Candidate $candidate, Departmentsbiro $department)
+    {
+        $ownDepartment = $this->getDepartment();
+        if ($department->id !== $ownDepartment->id) {
+            abort(403);
+        }
+
+        Evaluation::where('candidate_id', $candidate->id)
+            ->where('department_id', $department->id)
+            ->delete();
+
+        // Optionally revert status if no other departments evaluated
+        if ($candidate->evaluations()->count() === 0) {
+            $candidate->update(['status' => 'scheduled']);
+        }
+
+        return back()->with('success', "Scores for {$candidate->user->name} have been reset.");
     }
 
     // Decide candidate (accept/reject) — interviewers can also do this

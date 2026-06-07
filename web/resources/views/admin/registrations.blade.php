@@ -200,8 +200,8 @@
                                     {{-- Jadwal --}}
                                     <td class="px-4 py-3">
                                         @if ($schedule)
-                                            <p class="font-bold text-[#333333]">{{ $schedule->session_name }}</p>
-                                            <p class="text-[0.65rem] text-[#64748b]">{{ $schedule->scheduled_at?->locale('id')?->translatedFormat('d M Y, H:i') }}</p>
+                                            <p class="font-bold text-[#333333]">{{ \Carbon\Carbon::parse($schedule->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('H:i') }}</p>
+                                            <p class="text-[0.65rem] text-[#64748b]">{{ \Carbon\Carbon::parse($schedule->date)->locale('id')->translatedFormat('d M Y') }}</p>
                                         @else
                                             <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[0.65rem] font-black text-amber-700">Belum pilih</span>
                                         @endif
@@ -318,8 +318,8 @@
                         <div class="mt-3 rounded-xl bg-[#F4F7FF] px-3 py-3 text-xs">
                             <p class="font-bold text-[#64748b]">Jadwal Interview</p>
                             @if ($schedule)
-                                <p class="mt-1 font-black text-[#223872]">{{ $schedule->session_name }}</p>
-                                <p class="mt-0.5 text-[#64748b]">{{ $schedule->department?->name ?? '-' }} · {{ $schedule->scheduled_at?->locale('id')?->translatedFormat('d F Y, H:i') }} · {{ $schedule->location }}</p>
+                                <p class="mt-1 font-black text-[#223872]">{{ \Carbon\Carbon::parse($schedule->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('H:i') }}</p>
+                                <p class="mt-0.5 text-[#64748b]">{{ $schedule->department?->name ?? '-' }} · {{ \Carbon\Carbon::parse($schedule->date)->locale('id')->translatedFormat('d F Y') }}</p>
                             @else
                                 <p class="mt-1 text-[#64748b]">Belum memilih jadwal interview.</p>
                             @endif

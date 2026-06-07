@@ -24,6 +24,10 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthWebController::class, 'logout'])->name('logout');
 
+    Route::get('/profile', [\App\Http\Controllers\Web\ProfileWebController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [\App\Http\Controllers\Web\ProfileWebController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [\App\Http\Controllers\Web\ProfileWebController::class, 'updatePassword'])->name('profile.password');
+
     Route::middleware('role:candidate')->group(function () {
         Route::get('/verify-email', [CandidateWebController::class, 'showOtpForm'])->name('candidate.otp.view');
         Route::post('/verify-email', [CandidateWebController::class, 'verifyOtp'])->name('candidate.otp.verify');
@@ -35,12 +39,46 @@ Route::middleware('auth')->group(function () {
         Route::get('/candidate/dashboard', [CandidateWebController::class, 'showDashboard'])->name('candidate.dashboard');
         Route::get('/schedule', [CandidateWebController::class, 'showScheduleForm'])->name('candidate.schedule.view');
         Route::post('/schedule/book', [CandidateWebController::class, 'bookSchedule'])->name('candidate.schedule.book');
+        Route::get('/candidate/interview-detail', [CandidateWebController::class, 'showInterviewDetail'])->name('candidate.interview.detail');
+        Route::get('/candidate/registration-form', [CandidateWebController::class, 'showRegistrationForm'])->name('candidate.registration.form');
+        Route::get('/candidate/registration-attachments', [CandidateWebController::class, 'showRegistrationAttachments'])->name('candidate.registration.attachments');
+        Route::get('/candidate/apply/{openRecruitment}', [CandidateWebController::class, 'showApplyStartPage'])->name('candidate.apply.start');
+        Route::post('/candidate/apply', [CandidateWebController::class, 'applyOprec'])->name('candidate.apply.post');
+        Route::get('/candidate/preferences', [CandidateWebController::class, 'showPreferencesForm'])->name('candidate.preferences.view');
+        Route::post('/candidate/preferences', [CandidateWebController::class, 'savePreferences'])->name('candidate.preferences.post');
+        
+        Route::get('/candidate/experience', [CandidateWebController::class, 'showExperienceForm'])->name('candidate.experience.view');
+        Route::post('/candidate/experience/education', [CandidateWebController::class, 'storeEducation'])->name('candidate.education.store');
+        Route::post('/candidate/experience/education/{id}/delete', [CandidateWebController::class, 'destroyEducation'])->name('candidate.education.destroy');
+        Route::post('/candidate/experience/organization', [CandidateWebController::class, 'storeOrganization'])->name('candidate.organization.store');
+        Route::post('/candidate/experience/organization/{id}/delete', [CandidateWebController::class, 'destroyOrganization'])->name('candidate.organization.destroy');
+        Route::post('/candidate/experience/committee', [CandidateWebController::class, 'storeCommittee'])->name('candidate.committee.store');
+        Route::post('/candidate/experience/committee/{id}/delete', [CandidateWebController::class, 'destroyCommittee'])->name('candidate.committee.destroy');
+        Route::post('/candidate/experience/next', [CandidateWebController::class, 'nextFromExperience'])->name('candidate.experience.next');
+
+        Route::get('/candidate/skills-facilities', [CandidateWebController::class, 'showSkillsFacilitiesForm'])->name('candidate.skills.view');
+        Route::post('/candidate/skills', [CandidateWebController::class, 'storeSkill'])->name('candidate.skill.store');
+        Route::post('/candidate/skills/{id}/delete', [CandidateWebController::class, 'destroySkill'])->name('candidate.skill.destroy');
+        Route::post('/candidate/facilities', [CandidateWebController::class, 'storeFacility'])->name('candidate.facility.store');
+        Route::post('/candidate/facilities/{id}/delete', [CandidateWebController::class, 'destroyFacility'])->name('candidate.facility.destroy');
+        Route::post('/candidate/skills-facilities/next', [CandidateWebController::class, 'nextFromSkillsFacilities'])->name('candidate.skills.next');
+
+        Route::get('/candidate/documents', [CandidateWebController::class, 'showDocumentsForm'])->name('candidate.documents.view');
+        Route::post('/candidate/documents', [CandidateWebController::class, 'saveDocuments'])->name('candidate.documents.post');
+
+        Route::get('/candidate/signatures', [CandidateWebController::class, 'showSignaturesForm'])->name('candidate.signatures.view');
+        Route::post('/candidate/signatures', [CandidateWebController::class, 'saveSignatures'])->name('candidate.signatures.post');
     });
 
     Route::middleware('role:interviewer')->group(function () {
-        Route::get('/interviewer/schedule', [InterviewerWebController::class, 'index'])->name('interviewer.schedule');
+        Route::get('/interviewer/dashboard', [InterviewerWebController::class, 'dashboard'])->name('interviewer.dashboard');
+        Route::get('/interviewer/pendaftaran', [InterviewerWebController::class, 'registrations'])->name('interviewer.registrations');
+        Route::get('/interviewer/schedules', [InterviewerWebController::class, 'schedules'])->name('interviewer.schedules');
+        Route::patch('/interviewer/schedules/{schedule}/toggle-block', [InterviewerWebController::class, 'toggleScheduleBlock'])->name('interviewer.schedules.toggle-block');
+        Route::get('/interviewer/profile-matching', [InterviewerWebController::class, 'profileMatching'])->name('interviewer.profile-matching');
         Route::get('/interviewer/grade/{candidate}/{department}', [InterviewerWebController::class, 'showGradingForm'])->name('interviewer.grade.view');
         Route::post('/interviewer/grade/{candidate}/{department}', [InterviewerWebController::class, 'submitScores'])->name('interviewer.grade.post');
+        Route::delete('/interviewer/profile-matching/scores/{candidate}/{department}', [InterviewerWebController::class, 'profileMatchingResetScores'])->name('interviewer.profile-matching.reset');
         Route::post('/interviewer/decide/{candidate}', [InterviewerWebController::class, 'decideCandidate'])->name('interviewer.decide');
 
         // Interviewer Criteria CRUD
@@ -81,7 +119,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/admin/accounts', [\App\Http\Controllers\Web\AdminAccountController::class, 'store'])->name('admin.accounts.store');
         Route::put('/admin/accounts/{account}', [\App\Http\Controllers\Web\AdminAccountController::class, 'update'])->name('admin.accounts.update');
         Route::delete('/admin/accounts/{account}', [\App\Http\Controllers\Web\AdminAccountController::class, 'destroy'])->name('admin.accounts.destroy');
-        Route::get('/admin/rankings/{department}', [AdminWebController::class, 'showRankings'])->name('admin.rankings');
 
         Route::post('/admin/departments', [AdminWebController::class, 'storeDepartment'])->name('admin.departments.post');
         Route::get('/admin/departments/{department}', [AdminWebController::class, 'manageDepartment'])->name('admin.departments.manage');
@@ -104,32 +141,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/admin/departments/{department}/work-programs/{program}', [AdminWebController::class, 'updateWorkProgram'])->name('admin.departments.work-programs.update');
         Route::delete('/admin/departments/{department}/work-programs/{program}', [AdminWebController::class, 'destroyWorkProgram'])->name('admin.departments.work-programs.destroy');
 
-        Route::get('/admin/criteria/{department}', [AdminWebController::class, 'listCriteria'])->name('admin.criteria');
-        Route::post('/admin/criteria/{department}', [AdminWebController::class, 'storeCriterion'])->name('admin.criteria.post');
-        Route::post('/admin/criteria/{department}/reset', [AdminWebController::class, 'resetCriteria'])->name('admin.criteria.reset');
-        Route::put('/admin/criteria/{department}/{criterion}', [AdminWebController::class, 'updateCriterion'])->name('admin.criteria.update');
-        Route::delete('/admin/criteria/{department}/{criterion}', [AdminWebController::class, 'destroyCriterion'])->name('admin.criteria.destroy');
-
-        Route::get('/admin/schedules', [AdminWebController::class, 'listSchedules'])->name('admin.schedules');
-        Route::post('/admin/schedules', [AdminWebController::class, 'storeSchedule'])->name('admin.schedules.post');
-        Route::put('/admin/schedules/{schedule}', [AdminWebController::class, 'updateSchedule'])->name('admin.schedules.update');
-        Route::delete('/admin/schedules/{schedule}', [AdminWebController::class, 'destroySchedule'])->name('admin.schedules.destroy');
-
-        Route::get('/admin/interviewers', [AdminWebController::class, 'listInterviewers'])->name('admin.interviewers');
-        Route::post('/admin/interviewers', [AdminWebController::class, 'storeInterviewer'])->name('admin.interviewers.post');
-        Route::put('/admin/interviewers/{user}', [AdminWebController::class, 'updateInterviewer'])->name('admin.interviewers.update');
-        Route::delete('/admin/interviewers/{user}', [AdminWebController::class, 'destroyInterviewer'])->name('admin.interviewers.destroy');
-
         Route::post('/admin/decide/{candidate}', [AdminWebController::class, 'decideCandidate'])->name('admin.decide');
         Route::post('/admin/publish', [AdminWebController::class, 'publishAnnouncements'])->name('admin.publish');
-
-        Route::get('/admin/testing', [AdminWebController::class, 'testing'])->name('admin.testing');
-        Route::post('/admin/testing/scores/{candidate}/{department}', [AdminWebController::class, 'testingSaveScores'])->name('admin.testing.save');
-        Route::delete('/admin/testing/scores/{candidate}/{department}', [AdminWebController::class, 'testingResetScores'])->name('admin.testing.reset');
-
-        // Candidate CRUD for testing
-        Route::post('/admin/testing/candidates', [AdminWebController::class, 'testingStoreCandidate'])->name('admin.testing.candidates.store');
-        Route::put('/admin/testing/candidates/{candidate}', [AdminWebController::class, 'testingUpdateCandidate'])->name('admin.testing.candidates.update');
-        Route::delete('/admin/testing/candidates/{candidate}', [AdminWebController::class, 'testingDestroyCandidate'])->name('admin.testing.candidates.destroy');
     });
 });

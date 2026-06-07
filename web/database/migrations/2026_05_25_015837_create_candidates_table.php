@@ -14,13 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('user_id')->unique()->constrained('users')->onDelete('cascade');
             $table->enum('candidate_type', ['staff', 'bph'])->default('staff');
-            $table->string('nim')->unique();
-            $table->string('nickname')->nullable();
-            $table->enum('prodi', ['Teknik Informatika', 'Teknik Multimedia dan Jaringan', 'Teknik Multimedia dan Digital']);
-            $table->string('kelas');
-            $table->string('phone');
-            $table->text('address')->nullable();
-            $table->string('photo_path');
+            $table->string('photo_path')->nullable();
             $table->text('department_choice_reason')->nullable();
             $table->text('weakness_description')->nullable();
             $table->text('contribution_plan')->nullable();

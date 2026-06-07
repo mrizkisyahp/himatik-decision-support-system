@@ -244,14 +244,10 @@ class RecruitmentTestDataSeeder extends Seeder
         foreach ($departments as $index => $department) {
             $schedule = InterviewSchedule::create([
                 'department_id' => $department->id,
-                'session_name' => 'Sesi ' . ($index + 1) . ' - ' . $department->name,
-                'scheduled_at' => $now->copy()->addHours($index % 5),
-                'location' => 'Ruang HIMATIK',
-                'is_active' => true,
-            ]);
-            $schedule->interviewers()->sync([
-                $interviewers[$index % $interviewers->count()]->id,
-                $interviewers[($index + 1) % $interviewers->count()]->id,
+                'date' => $now->copy()->toDateString(),
+                'start_time' => $now->copy()->addHours($index % 5)->toTimeString(),
+                'end_time' => $now->copy()->addHours(($index % 5) + 1)->toTimeString(),
+                'is_blocked' => false,
             ]);
         }
 
@@ -270,17 +266,17 @@ class RecruitmentTestDataSeeder extends Seeder
                 'password' => Hash::make('password123'),
                 'role' => 'candidate',
                 'email_verified_at' => now(),
-            ]);
-
-            $candidate = Candidate::create([
-                'user_id' => $user->id,
-                'candidate_type' => 'staff',
                 'nickname' => strtok($name, ' '),
                 'nim' => $nim,
                 'prodi' => str_starts_with($kelas, 'TMJ') ? 'Teknik Multimedia dan Jaringan' : (str_starts_with($kelas, 'TMD') ? 'Teknik Multimedia dan Digital' : 'Teknik Informatika'),
                 'kelas' => $kelas,
                 'phone' => '0812345678' . $index,
                 'address' => 'Alamat placeholder ' . $name,
+            ]);
+
+            $candidate = Candidate::create([
+                'user_id' => $user->id,
+                'candidate_type' => 'staff',
                 'department_choice_reason' => 'Saya ingin berkontribusi sesuai minat dan kemampuan.',
                 'weakness_description' => 'Masih perlu meningkatkan manajemen prioritas.',
                 'contribution_plan' => 'Aktif mengikuti program kerja dan menyelesaikan amanah.',

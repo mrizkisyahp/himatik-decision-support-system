@@ -98,7 +98,10 @@
                     @endforeach
                 </nav>
 
-                <div class="border-t border-[#dce5f8] p-4">
+                <div class="border-t border-[#dce5f8] p-4 space-y-2">
+                    <a href="{{ route('profile.edit') }}" class="flex w-full items-center justify-center rounded-2xl border border-transparent bg-[#F4F7FF] px-4 py-3 text-sm font-black text-[#223872] transition hover:bg-white hover:border-[#dce5f8] hover:shadow-sm">
+                        Pengaturan Profil
+                    </a>
                     <form action="{{ route('logout') }}" method="POST">
                         @csrf
                         <button type="submit" class="flex w-full items-center justify-center rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-black text-red-600 transition hover:bg-red-100">
@@ -126,11 +129,7 @@
                         </div>
                     </div>
 
-                    @unless($hideStubBadge ?? false)
-                        <div class="hidden rounded-2xl border border-[#dce5f8] bg-white px-4 py-2 text-sm font-bold text-[#64748b] sm:block">
-                            Stub UI
-                        </div>
-                    @endunless
+
                 </div>
             </header>
 
