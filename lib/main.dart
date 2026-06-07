@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'config/api_config.dart';
 import 'screens/carousel_screen.dart';
+import 'screens/dashboard_screen.dart';
 import 'screens/portal_screen.dart';
 import 'screens/registration_account_screen.dart';
 import 'screens/verification_screen.dart';
-import 'services/auth_service.dart';
 import 'theme/app_colors.dart';
 
 void main() async {
@@ -65,65 +65,8 @@ class MainApp extends StatelessWidget {
         '/login': (context) => const PortalScreen(),
         '/registrationAccount': (context) => const RegistrationAccount(),
         '/verification': (context) => const VerificationScreen(),
-        '/dashboard': (context) => const DashboardPlaceholderScreen(),
+        '/dashboard': (context) => const DashboardScreen(),
       },
-    );
-  }
-}
-
-// Temporary placeholder for dashboard after successful flow
-class DashboardPlaceholderScreen extends StatelessWidget {
-  const DashboardPlaceholderScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.dashboard_outlined,
-              size: 64,
-              color: AppColors.primary,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Dashboard Calon Anggota',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary1,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Akun Anda berhasil diverifikasi!',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.tertiary5,
-              ),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () async {
-                // Logout action
-                final response = await AuthService().logout();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(response['message'] as String)),
-                  );
-                  Navigator.pushReplacementNamed(context, '/login');
-                }
-              },
-              child: const Text('Keluar'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
