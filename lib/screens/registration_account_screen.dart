@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_state.dart';
+import '../widgets/app_button.dart';
+import '../widgets/app_input.dart';
+import '../widgets/app_loading.dart';
 
 class RegistrationAccount extends StatefulWidget {
   const RegistrationAccount({super.key});
@@ -12,232 +14,223 @@ class RegistrationAccount extends StatefulWidget {
 }
 
 class _RegistrationAccountState extends State<RegistrationAccount> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _passwordConfirmController = TextEditingController();
+  final AuthService _authService = AuthService();
+
+  bool _isLoading = false;
+  String? _nameError;
+  String? _emailError;
+  String? _passwordError;
+  String? _passwordConfirmError;
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _confirmPasswordController.dispose();
+    _passwordConfirmController.dispose();
     super.dispose();
   }
 
-  void _nextPressed() {
-    if (_formKey.currentState!.validate()) {
-      // Temporarily store register email in appstate to verify it
-      AppState.instance.email = _emailController.text.trim();
-      Navigator.pushNamed(context, '/verification');
+  void _validateAndSubmit() async {
+    setState(() {
+      _nameError = null;
+      _emailError = null;
+      _passwordError = null;
+      _passwordConfirmError = null;
+    });
+
+    final String name = _nameController.text.trim();
+    final String email = _emailController.text.trim();
+    final String password = _passwordController.text;
+    final String passwordConfirm = _passwordConfirmController.text;
+
+    bool hasError = false;
+
+    if (name.isEmpty) {
+      setState(() {
+        _nameError = 'Nama lengkap wajib diisi';
+      });
+      hasError = true;
+    }
+
+    if (email.isEmpty) {
+      setState(() {
+        _emailError = 'Email wajib diisi';
+      });
+      hasError = true;
+    } else if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      setState(() {
+        _emailError = 'Format email tidak valid';
+      });
+      hasError = true;
+    }
+
+    if (password.isEmpty) {
+      setState(() {
+        _passwordError = 'Password wajib diisi';
+      });
+      hasError = true;
+    } else if (password.length < 8) {
+      setState(() {
+        _passwordError = 'Password minimal terdiri dari 8 karakter';
+      });
+      hasError = true;
+    }
+
+    if (passwordConfirm.isEmpty) {
+      setState(() {
+        _passwordConfirmError = 'Konfirmasi password wajib diisi';
+      });
+      hasError = true;
+    } else if (password != passwordConfirm) {
+      setState(() {
+        _passwordConfirmError = 'Konfirmasi password tidak cocok';
+      });
+      hasError = true;
+    }
+
+    if (hasError) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final response = await _authService.register(
+      name: name,
+      email: email,
+      password: password,
+      passwordConfirmation: passwordConfirm,
+    );
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (response['success'] == true) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response['message'] as String),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pushReplacementNamed(context, '/verification');
+    } else {
+      if (!mounted) return;
+      
+      // Parse backend validation errors if any
+      final errors = response['errors'] as Map<String, dynamic>?;
+      if (errors != null) {
+        setState(() {
+          if (errors.containsKey('email')) {
+            _emailError = (errors['email'] as List<dynamic>).first.toString();
+          }
+          if (errors.containsKey('nama')) {
+            _nameError = (errors['nama'] as List<dynamic>).first.toString();
+          }
+          if (errors.containsKey('password')) {
+            _passwordError = (errors['password'] as List<dynamic>).first.toString();
+          }
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response['message'] as String),
+            backgroundColor: AppColors.red,
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: Row(
-          children: [
-            const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(LucideIcons.arrowLeft, color: AppColors.primary1),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ],
-        ),
-        leadingWidth: 56,
-        titleSpacing: 0,
-        title: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: Text(
-            'Kembali',
-            style: GoogleFonts.dmSans(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+    return AppLoadingOverlay(
+      isLoading: _isLoading,
+      child: Scaffold(
+        backgroundColor: AppColors.tertiary,
+        appBar: AppBar(
+          title: const Text(
+            'Daftar Akun',
+            style: TextStyle(
               color: AppColors.primary1,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
             ),
           ),
+          leading: IconButton(
+            icon: const Icon(LucideIcons.arrowLeft),
+            onPressed: () => Navigator.pop(context),
+          ),
         ),
-      ),
-      body: SafeArea(
-        child: Center(
+        body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Title (Max size 32)
-                  Text(
-                    'Daftar Akun HIMATIK PNJ',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary1,
-                      height: 1.2,
-                    ),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Daftar Akun HIMATIK PNJ',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary1,
                   ),
-                  const SizedBox(height: 6), // Label to sublabel gap
-
-                  // Subtitle
-                  Text(
-                    'Buat akun HIMATIK PNJ untuk melanjutkan mendaftarkan diri sebagai calon anggota HIMATIK PNJ!',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 12,
-                      color: AppColors.tertiary4,
-                      height: 1.4,
-                    ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Lengkapi form berikut untuk mendaftarkan akun calon anggota Anda',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.tertiary4,
                   ),
-                  const SizedBox(height: 18), // Normal gap
-
-                  // Email Input
-                  Text(
-                    'Email',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary2,
-                    ),
-                  ),
-                  const SizedBox(height: 6), // Label to input gap
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    style: GoogleFonts.dmSans(fontSize: 16),
-                    decoration: const InputDecoration(
-                      hintText: 'Masukkan Email',
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Email tidak boleh kosong';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Format email tidak valid';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12), // Intermediate gap
-
-                  // Password Input
-                  Text(
-                    'Kata Sandi',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary2,
-                    ),
-                  ),
-                  const SizedBox(height: 6), // Label to input gap
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    textInputAction: TextInputAction.next,
-                    style: GoogleFonts.dmSans(fontSize: 16),
-                    decoration: InputDecoration(
-                      hintText: 'Masukkan Kata Sandi',
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
-                          size: 20,
-                          color: AppColors.tertiary5,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Kata sandi tidak boleh kosong';
-                      }
-                      if (value.length < 6) {
-                        return 'Kata sandi minimal 6 karakter';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12), // Intermediate gap
-
-                  // Confirm Password Input
-                  Text(
-                    'Konfirmasi Kata Sandi',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary2,
-                    ),
-                  ),
-                  const SizedBox(height: 6), // Label to input gap
-                  TextFormField(
-                    controller: _confirmPasswordController,
-                    obscureText: _obscureConfirmPassword,
-                    textInputAction: TextInputAction.done,
-                    style: GoogleFonts.dmSans(fontSize: 16),
-                    onFieldSubmitted: (_) => _nextPressed(),
-                    decoration: InputDecoration(
-                      hintText: 'Masukkan Kata Sandi',
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureConfirmPassword ? LucideIcons.eyeOff : LucideIcons.eye,
-                          size: 20,
-                          color: AppColors.tertiary5,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscureConfirmPassword = !_obscureConfirmPassword;
-                          });
-                        },
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Konfirmasi kata sandi tidak boleh kosong';
-                      }
-                      if (value != _passwordController.text) {
-                        return 'Kata sandi tidak sama';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 32), // Custom spacing to separate form from button
-
-                  // Next Button
-                  ElevatedButton(
-                    onPressed: _nextPressed,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Berikutnya',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Icon(LucideIcons.arrowRight, size: 18),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 32),
+                AppTextField(
+                  label: 'Nama Lengkap',
+                  placeholder: 'Masukkan nama lengkap sesuai KTP',
+                  controller: _nameController,
+                  prefixIcon: LucideIcons.user,
+                  errorText: _nameError,
+                ),
+                const SizedBox(height: 18),
+                AppTextField(
+                  label: 'Email',
+                  placeholder: 'Masukkan email aktif Anda',
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  prefixIcon: LucideIcons.mail,
+                  errorText: _emailError,
+                ),
+                const SizedBox(height: 18),
+                AppTextField(
+                  label: 'Password',
+                  placeholder: 'Buat password minimal 8 karakter',
+                  controller: _passwordController,
+                  isPassword: true,
+                  prefixIcon: LucideIcons.lock,
+                  errorText: _passwordError,
+                ),
+                const SizedBox(height: 18),
+                AppTextField(
+                  label: 'Konfirmasi Password',
+                  placeholder: 'Masukkan kembali password Anda',
+                  controller: _passwordConfirmController,
+                  isPassword: true,
+                  prefixIcon: LucideIcons.lock,
+                  errorText: _passwordConfirmError,
+                ),
+                const SizedBox(height: 40),
+                AppPrimaryButton(
+                  text: 'Berikutnya →',
+                  onPressed: _validateAndSubmit,
+                ),
+                const SizedBox(height: 24),
+              ],
             ),
           ),
         ),
