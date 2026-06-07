@@ -6,6 +6,10 @@ import 'screens/dashboard_screen.dart';
 import 'screens/portal_screen.dart';
 import 'screens/registration_account_screen.dart';
 import 'screens/verification_screen.dart';
+import 'screens/candidate_register_profile_screen.dart';
+import 'screens/candidate_select_schedule_screen.dart';
+import 'screens/interviewer_grade_screen.dart';
+import 'screens/admin_decide_screen.dart';
 import 'theme/app_colors.dart';
 
 void main() async {
@@ -66,7 +70,12 @@ class MainApp extends StatelessWidget {
         '/registrationAccount': (context) => const RegistrationAccount(),
         '/verification': (context) => const VerificationScreen(),
         '/dashboard': (context) => const DashboardScreen(),
+        '/candidate/register-profile': (context) => const CandidateRegisterProfileScreen(),
+        '/candidate/select-schedule': (context) => const CandidateSelectScheduleScreen(),
+        '/interviewer/grade': (context) => const InterviewerGradeScreen(),
+        '/admin/decide': (context) => const AdminDecideScreen(),
       },
     );
   }
 }
+

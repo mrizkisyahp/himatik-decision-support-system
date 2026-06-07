@@ -60,4 +60,68 @@ class AdminService {
       };
     }
   }
+
+  Future<Map<String, dynamic>> getRankings(int departmentId) async {
+    try {
+      final response = await _apiService.get('/admin/rankings/$departmentId');
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return {
+          'success': true,
+          'department': data['department'],
+          'rankings': data['rankings'] as List<dynamic>,
+          'announcements': data['announcements'] as Map<String, dynamic>?,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Gagal mengambil data ranking SPK',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Koneksi ke server gagal: $e',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> decideCandidate({
+    required int candidateId,
+    required String status,
+    int? assignedDepartmentId,
+  }) async {
+    try {
+      final body = {
+        'status': status,
+        'assigned_department_id': assignedDepartmentId,
+      };
+
+      final response = await _apiService.post(
+        '/admin/decide/$candidateId',
+        body,
+      );
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Keputusan berhasil disimpan',
+          'data': data['data'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Gagal menyimpan keputusan',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Koneksi ke server gagal: $e',
+      };
+    }
+  }
 }
+

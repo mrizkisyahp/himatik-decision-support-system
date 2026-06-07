@@ -57,4 +57,38 @@ class ApiService {
       body: jsonEncode(body),
     );
   }
+
+  Future<http.Response> postMultipart(
+    String endpoint,
+    Map<String, String> fields,
+    Map<String, List<int>> fileBytes,
+    Map<String, String> fileNames,
+  ) async {
+    final headers = await _getHeaders();
+    final url = Uri.parse('${ApiConfig.baseUrl}$endpoint');
+    final request = http.MultipartRequest('POST', url);
+
+    headers.forEach((key, value) {
+      if (key.toLowerCase() != 'content-type') {
+        request.headers[key] = value;
+      }
+    });
+
+    request.fields.addAll(fields);
+
+    fileBytes.forEach((key, bytes) {
+      final fileName = fileNames[key] ?? '$key.png';
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          key,
+          bytes,
+          filename: fileName,
+        ),
+      );
+    });
+
+    final streamedResponse = await request.send();
+    return await http.Response.fromStream(streamedResponse);
+  }
 }
+

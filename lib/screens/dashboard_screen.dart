@@ -7,6 +7,8 @@ import '../services/api_service.dart';
 import '../services/admin_service.dart';
 import '../services/reviewer_service.dart';
 import '../theme/app_colors.dart';
+import '../widgets/app_button.dart';
+
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -26,6 +28,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // User profile loaded from /me
   UserModel? _user;
   Map<String, dynamic>? _candidateData;
+  Map<String, dynamic>? _announcementData;
 
   // Admin specific data
   Map<String, dynamic>? _adminStats;
@@ -99,9 +102,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final decoded = jsonDecode(responseBody) as Map<String, dynamic>;
       if (decoded['success'] == true) {
         _candidateData = decoded['candidate'] as Map<String, dynamic>?;
-        final announcement = decoded['announcement'] as Map<String, dynamic>?;
-        if (announcement != null) {
-          _isAnnouncementsPublished = announcement['is_published'] as bool? ?? false;
+        _announcementData = decoded['announcement'] as Map<String, dynamic>?;
+        if (_announcementData != null) {
+          _isAnnouncementsPublished = _announcementData!['is_published'] == true || _announcementData!['is_published'] == 1;
         }
       }
     } catch (_) {}
@@ -238,6 +241,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final bool hasProfile = _candidateData != null;
     final String status = _candidateData?['status'] as String? ?? 'registered';
     
+    // Check if announcements are published and outcome is decided
+    final bool isPublished = _isAnnouncementsPublished && _announcementData != null && _announcementData!['status'] != 'pending';
+    final String annStatus = _announcementData?['status'] as String? ?? 'pending';
+
+    String assignedDeptName = 'Departemen';
+    final int? assignedDeptId = _announcementData?['assigned_department_id'] as int?;
+    if (assignedDeptId != null && _candidateData?['department_choices'] != null) {
+      for (final choice in _candidateData!['department_choices']) {
+        final dept = choice['department'];
+        if (dept != null && dept['id'] == assignedDeptId) {
+          assignedDeptName = dept['name'] as String;
+          break;
+        }
+      }
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -289,6 +308,68 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           const SizedBox(height: 24),
+          
+          if (isPublished) ...[
+            const Text(
+              'Hasil Seleksi Kepengurusan',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary1,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: annStatus == 'accepted' ? Colors.green : AppColors.red,
+                  width: 1.5,
+                ),
+              ),
+              color: annStatus == 'accepted' ? Colors.green.shade50 : AppColors.lightRed,
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          annStatus == 'accepted' ? LucideIcons.checkCircle : LucideIcons.helpCircle,
+                          color: annStatus == 'accepted' ? Colors.green : AppColors.red,
+                          size: 28,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          annStatus == 'accepted' ? 'DITERIMA' : 'TIDAK DITERIMA',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: annStatus == 'accepted' ? Colors.green.shade800 : AppColors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      annStatus == 'accepted'
+                          ? 'Selamat! Anda dinyatakan LULUS seleksi kepengurusan HIMATIK PNJ periode ini dan ditempatkan di departemen/biro:\n\n$assignedDeptName\n\nSilakan menghubungi pengurus departemen untuk koordinasi lebih lanjut.'
+                          : 'Terima kasih telah berpartisipasi dalam seleksi kepengurusan HIMATIK PNJ. Mohon maaf, saat ini Anda belum dapat bergabung bersama kami. Tetap semangat dan jangan pernah menyerah!',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: annStatus == 'accepted' ? Colors.green.shade900 : AppColors.neutral,
+                        height: 1.6,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+
           const Text(
             'Status Pendaftaran',
             style: TextStyle(
@@ -303,6 +384,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: AppColors.primary8, width: 1),
             ),
             color: Colors.white,
             child: Padding(
@@ -337,18 +419,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 16),
                   Text(
                     !hasProfile
-                        ? 'Silakan lengkapi formulir identitas akun Anda di website portal utama untuk melanjutkan proses seleksi.'
+                        ? 'Silakan lengkapi formulir identitas akun Anda untuk melanjutkan proses seleksi kepengurusan.'
                         : status == 'registered'
                             ? 'Profil Anda telah terdaftar. Silakan pilih jadwal wawancara yang tersedia.'
                             : status == 'scheduled'
-                                ? 'Anda telah memilih jadwal wawancara. Silakan cek detail jadwal Anda di website.'
-                                : 'Proses seleksi sedang dievaluasi oleh tim penguji.',
+                                ? 'Anda telah memilih jadwal wawancara. Sesi wawancara Anda akan dilakukan sesuai waktu terpilih.'
+                                : 'Proses wawancara selesai. Jawaban Anda sedang dievaluasi oleh tim penguji menggunakan DSS.',
                     style: const TextStyle(
                       fontSize: 14,
                       color: AppColors.tertiary4,
                       height: 1.5,
                     ),
                   ),
+                  if (!hasProfile || (hasProfile && status == 'registered')) ...[
+                    const SizedBox(height: 20),
+                    AppPrimaryButton(
+                      text: !hasProfile ? 'Lengkapi Profil Sekarang' : 'Pilih Jadwal Wawancara',
+                      onPressed: () async {
+                        final routeName = !hasProfile
+                            ? '/candidate/register-profile'
+                            : '/candidate/select-schedule';
+                        await Navigator.pushNamed(context, routeName);
+                        _loadDashboardData();
+                      },
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -473,6 +568,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       Text(
                                         'NIM: $candidateNim',
                                         style: const TextStyle(fontSize: 13, color: AppColors.tertiary5),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      AppPrimaryButton(
+                                        text: 'Nilai Wawancara',
+                                        onPressed: () async {
+                                          final refresh = await Navigator.pushNamed(
+                                            context,
+                                            '/interviewer/grade',
+                                            arguments: {
+                                              'candidateId': booking['candidate']['id'] as int,
+                                              'departmentId': item['department_id'] as int,
+                                              'candidateName': candidateName,
+                                              'candidateNim': candidateNim,
+                                            },
+                                          );
+                                          if (refresh == true) {
+                                            _loadDashboardData();
+                                          }
+                                        },
                                       ),
                                     ],
                                     if (isBlocked) ...[
@@ -617,36 +731,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       final firstChoiceCount = item['first_choice_candidates_count']?.toString() ?? '0';
                       final secondChoiceCount = item['second_choice_candidates_count']?.toString() ?? '0';
 
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                  color: AppColors.primary1,
+                      return InkWell(
+                        onTap: () async {
+                          await Navigator.pushNamed(
+                            context,
+                            '/admin/decide',
+                            arguments: {
+                              'departmentId': item['id'] as int,
+                              'departmentName': name,
+                            },
+                          );
+                          _loadDashboardData();
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    const Icon(LucideIcons.arrowRight, size: 14, color: AppColors.primary),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                          color: AppColors.primary1,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  'Pilihan 1: $firstChoiceCount',
-                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.primary),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Pilihan 2: $secondChoiceCount',
-                                  style: const TextStyle(fontSize: 12, color: AppColors.tertiary5),
-                                ),
-                              ],
-                            ),
-                          ],
+                              Row(
+                                children: [
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        'Pilihan 1: $firstChoiceCount',
+                                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.primary),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Pilihan 2: $secondChoiceCount',
+                                        style: const TextStyle(fontSize: 12, color: AppColors.tertiary5),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(LucideIcons.arrowRight, size: 16, color: AppColors.tertiary5),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },

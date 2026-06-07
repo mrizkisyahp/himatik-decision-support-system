@@ -194,8 +194,8 @@ class AuthService {
       final response = await _apiService.get(ApiConfig.me);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        if (data['success'] == true && data['data'] != null) {
-          return UserModel.fromJson(data['data'] as Map<String, dynamic>);
+        if (data['success'] == true && data['user'] != null) {
+          return UserModel.fromJson(data['user'] as Map<String, dynamic>);
         }
       }
       return null;
