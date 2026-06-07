@@ -1,9 +1,21 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+
 class ApiConfig {
   ApiConfig._();
 
-  // For Android Emulator, 10.0.2.2 points to host's localhost (0.0.0.0)
-  // For iOS emulator or web, use localhost (127.0.0.1)
-  static const String baseUrl = 'http://10.0.2.2:8000/api';
+  static String get baseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:8000/api';
+    }
+    if (Platform.isAndroid) {
+      // 192.168.240.1 is the default gateway/host IP for Waydroid.
+      // 10.0.2.2 is the default for standard Android SDK Emulator.
+      // We prioritize Waydroid subnet since the current target device is Waydroid.
+      return 'http://192.168.240.1:8000/api';
+    }
+    return 'http://localhost:8000/api';
+  }
 
   static const String login = '/login';
   static const String register = '/register';
