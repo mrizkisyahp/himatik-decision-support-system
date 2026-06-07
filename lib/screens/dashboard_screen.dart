@@ -1,8 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../models/user_model.dart';
+import '../services/auth_service.dart';
+import '../services/api_service.dart';
+import '../services/admin_service.dart';
+import '../services/reviewer_service.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_state.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -12,761 +16,685 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final AuthService _authService = AuthService();
+  final AdminService _adminService = AdminService();
+  final ReviewerService _reviewerService = ReviewerService();
+
+  bool _isLoading = true;
+  String? _errorMessage;
+  
+  // User profile loaded from /me
+  UserModel? _user;
+  Map<String, dynamic>? _candidateData;
+
+  // Admin specific data
+  Map<String, dynamic>? _adminStats;
+  List<dynamic>? _adminDepartments;
+  bool _isAnnouncementsPublished = false;
+
+  // Reviewer specific data
+  List<dynamic>? _reviewerSchedules;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardData();
+  }
+
+  Future<void> _loadDashboardData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // 1. Fetch user profile & candidate info
+      final userProfile = await _authService.getMe();
+      if (userProfile == null) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Gagal memuat profil pengguna. Silakan coba lagi.';
+        });
+        return;
+      }
+
+      _user = userProfile;
+
+      // 2. Fetch role-specific data
+      if (_user!.role == 'admin') {
+        final statsResponse = await _adminService.getStats();
+        if (statsResponse['success'] == true) {
+          _adminStats = statsResponse['stats'] as Map<String, dynamic>;
+          _adminDepartments = statsResponse['departments'] as List<dynamic>;
+        }
+      } else if (_user!.role == 'interviewer') {
+        final scheduleResponse = await _reviewerService.getSchedules();
+        if (scheduleResponse['success'] == true) {
+          _reviewerSchedules = scheduleResponse['data'] as List<dynamic>;
+        } else {
+          _errorMessage = scheduleResponse['message'] as String?;
+        }
+      } else {
+        // Candidate role: data already returned or can be enriched
+        final response = await ApiService().get('/me');
+        if (response.statusCode == 200) {
+          importData(response.body);
+        }
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Terjadi kesalahan koneksi: $e';
+      });
+    }
+  }
+
+  void importData(String responseBody) {
+    // Helper to decode candidate JSON
+    try {
+      final decoded = jsonDecode(responseBody) as Map<String, dynamic>;
+      if (decoded['success'] == true) {
+        _candidateData = decoded['candidate'] as Map<String, dynamic>?;
+        final announcement = decoded['announcement'] as Map<String, dynamic>?;
+        if (announcement != null) {
+          _isAnnouncementsPublished = announcement['is_published'] as bool? ?? false;
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _handleLogout() async {
+    setState(() {
+      _isLoading = true;
+    });
+    final response = await _authService.logout();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(response['message'] as String)),
+      );
+      Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
+
+  Future<void> _togglePublishAnnouncements(bool value) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final response = await _adminService.publishAnnouncements(value);
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(response['message'] as String),
+        backgroundColor: response['success'] == true ? Colors.green : AppColors.red,
+      ),
+    );
+
+    if (response['success'] == true) {
+      setState(() {
+        _isAnnouncementsPublished = value;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final state = AppState.instance;
-    final bool isReviewer = state.role == UserRole.reviewer;
-
     return Scaffold(
-      key: _scaffoldKey,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(LucideIcons.menu, color: AppColors.primary1),
-          onPressed: () => _scaffoldKey.currentState!.openDrawer(),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 18.0),
-            child: Image.asset(
-              'assets/img/logo.png',
-              width: 32,
-              height: 32,
-            ),
-          )
-        ],
-      ),
-      drawer: _buildDrawer(context),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(18.0), // Normal gap
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Date Text
-              Text(
-                'Jum\'at, 12 Juni 2026',
-                style: GoogleFonts.dmSans(
-                  fontSize: 12,
-                  color: AppColors.tertiary4,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 6), // label to sublabel/greetings
-
-              // Greeting (Max size 32)
-              Text(
-                'Halo, ${state.name}!',
-                style: GoogleFonts.dmSans(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary1,
-                  height: 1.1,
-                ),
-              ),
-              const SizedBox(height: 18), // Normal gap
-
-              if (isReviewer)
-                _buildReviewerLayout(context)
-              else if (!state.hasSubmittedRecruitment)
-                _buildCandidatePreLayout(context)
-              else
-                _buildCandidatePostLayout(context),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Draw Menu Drawer
-  Widget _buildDrawer(BuildContext context) {
-    final state = AppState.instance;
-    return Drawer(
       backgroundColor: AppColors.tertiary,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Drawer Header
-          DrawerHeader(
-            decoration: const BoxDecoration(
-              color: AppColors.primary2,
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/img/logo.png',
+              height: 32,
+              width: 32,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                CircleAvatar(
-                  backgroundColor: AppColors.primary8,
-                  radius: 28,
-                  child: Text(
-                    state.name.isNotEmpty ? state.name[0].toUpperCase() : 'U',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary1,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  state.namaLengkap.isNotEmpty && state.role == UserRole.candidate
-                      ? state.namaLengkap
-                      : state.name,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                Text(
-                  state.email.isNotEmpty ? state.email : 'user@pnj.ac.id',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 12,
-                    color: Colors.white70,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Drawer Items
-          ListTile(
-            leading: const Icon(LucideIcons.layoutDashboard, color: AppColors.primary1),
-            title: Text(
-              'Dashboard',
-              style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          
-          if (state.role == UserRole.candidate && state.hasSubmittedRecruitment) ...[
-            ListTile(
-              leading: const Icon(LucideIcons.calendar, color: AppColors.primary1),
-              title: Text(
-                'Pilih/Ubah Jadwal',
-                style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.w500),
+            const SizedBox(width: 12),
+            Text(
+              _user == null
+                  ? 'Dashboard'
+                  : _user!.role == 'admin'
+                      ? 'Admin Portal'
+                      : _user!.role == 'interviewer'
+                          ? 'Reviewer Portal'
+                          : 'Portal Anggota',
+              style: const TextStyle(
+                color: AppColors.primary1,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
               ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/interviewSelection').then((_) => setState(() {}));
-              },
-            ),
-            ListTile(
-              leading: const Icon(LucideIcons.fileText, color: AppColors.primary1),
-              title: Text(
-                'Formulir Pendaftaran',
-                style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.w500),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/candidate/detail');
-              },
-            ),
-            ListTile(
-              leading: const Icon(LucideIcons.paperclip, color: AppColors.primary1),
-              title: Text(
-                'Lampiran Berkas',
-                style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.w500),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/candidate/attachments');
-              },
             ),
           ],
-          
-          const Spacer(),
-          const Divider(color: AppColors.primary8),
-          
-          ListTile(
-            leading: const Icon(LucideIcons.logOut, color: AppColors.red),
-            title: Text(
-              'Keluar',
-              style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.red),
-            ),
-            onTap: () {
-              Navigator.pushReplacementNamed(context, '/login');
-            },
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.logOut, color: AppColors.red),
+            tooltip: 'Keluar',
+            onPressed: _handleLogout,
           ),
-          const SizedBox(height: 12),
         ],
       ),
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primary,
+              ),
+            )
+          : _errorMessage != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(LucideIcons.helpCircle, size: 64, color: AppColors.tertiary5),
+                        const SizedBox(height: 16),
+                        Text(
+                          _errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 16, color: AppColors.neutral),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: _loadDashboardData,
+                          child: const Text('Coba Lagi'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : _buildRoleDashboard(),
     );
   }
 
-  // --- Candidate Layout: Before submitting recruitment form ---
-  Widget _buildCandidatePreLayout(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Jadwal Wawancara Header
-        _buildSectionHeader('Jadwal Wawancara'),
-        const SizedBox(height: 12), // Intermediate gap
+  Widget _buildRoleDashboard() {
+    if (_user == null) return const SizedBox.shrink();
+    
+    switch (_user!.role) {
+      case 'admin':
+        return _buildAdminDashboard();
+      case 'interviewer':
+        return _buildReviewerDashboard();
+      case 'candidate':
+      default:
+        return _buildCandidateDashboard();
+    }
+  }
 
-        // Empty state card
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-          decoration: BoxDecoration(
+  // ─────────────────────────────────────────────────────────────────
+  // 1. CANDIDATE DASHBOARD
+  // ─────────────────────────────────────────────────────────────────
+  Widget _buildCandidateDashboard() {
+    final bool hasProfile = _candidateData != null;
+    final String status = _candidateData?['status'] as String? ?? 'registered';
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Welcome Card
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: AppColors.primary8, width: 1),
+            ),
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.tertiary8),
-          ),
-          child: Column(
-            children: [
-              const Icon(
-                LucideIcons.moreHorizontal,
-                size: 36,
-                color: AppColors.tertiary6,
-              ),
-              const SizedBox(height: 12), // Intermediate gap
-              Text(
-                'Belum Ada',
-                style: GoogleFonts.dmSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.tertiary5,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 18), // Normal gap
-
-        // Daftar Rekrutmen
-        _buildSectionHeader('Daftar Rekrutmen'),
-        const SizedBox(height: 12), // Intermediate gap
-
-        // Recruitment card
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-            border: Border.all(color: AppColors.primary8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Open Recruitment Staff HIMATIK PNJ',
-                style: GoogleFonts.dmSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary1,
-                ),
-              ),
-              const SizedBox(height: 12), // Intermediate gap
-              Row(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Row(
                 children: [
-                  const Icon(LucideIcons.calendarDays, size: 16, color: AppColors.primary3),
-                  const SizedBox(width: 8),
-                  Text(
-                    '12 Juni 2026 s.d. 14 Juni 2026',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 12,
-                      color: AppColors.tertiary4,
-                      fontWeight: FontWeight.w500,
+                  const CircleAvatar(
+                    radius: 30,
+                    backgroundColor: AppColors.primary10,
+                    child: Icon(LucideIcons.user, size: 30, color: AppColors.primary),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Halo, ${_user?.name ?? "Calon Anggota"}!',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary1,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _user?.email ?? '',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.tertiary5,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 18), // Normal gap
-              
-              // Register Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Navigate to form step 0 (CandidateForm2)
-                    Navigator.pushNamed(context, '/candidate/form-2').then((_) => setState(() {}));
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Status Pendaftaran',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary1,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Status Box
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            color: Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
+                      Icon(
+                        hasProfile ? LucideIcons.checkCircle : LucideIcons.helpCircle,
+                        color: hasProfile ? Colors.green : AppColors.yellow,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
                       Text(
-                        'Daftar',
-                        style: GoogleFonts.dmSans(
+                        !hasProfile
+                            ? 'Identitas Belum Lengkap'
+                            : status == 'registered'
+                                ? 'Identitas Terkirim'
+                                : status == 'scheduled'
+                                    ? 'Jadwal Wawancara Terpilih'
+                                    : 'Tahap Evaluasi',
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
+                          color: AppColors.primary1,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      const Icon(LucideIcons.clipboardList, size: 16),
                     ],
                   ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // --- Candidate Layout: After submitting recruitment form ---
-  Widget _buildCandidatePostLayout(BuildContext context) {
-    final state = AppState.instance;
-    final slot = state.getSelectedSlotDetails();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Jadwal Wawancara Header
-        _buildSectionHeader('Jadwal Wawancara'),
-        const SizedBox(height: 12),
-
-        // Dynamic interview status card
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.tertiary8),
-          ),
-          child: slot == null
-              ? Column(
-                  children: [
-                    Text(
-                      'Silakan Pilih Jadwal Wawancara Anda',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary2,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/interviewSelection').then((_) => setState(() {}));
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          'Pilih Jadwal',
-                          style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Wawancara Staff HIMATIK PNJ',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary1,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildIconLabelRow(LucideIcons.calendar, '${slot['day']}, ${slot['date']}'),
-                    const SizedBox(height: 6),
-                    _buildIconLabelRow(LucideIcons.clock, slot['time']),
-                    const SizedBox(height: 6),
-                    _buildIconLabelRow(LucideIcons.mapPin, slot['room']),
-                    const SizedBox(height: 18),
-                    
-                    // Selengkapnya Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/candidate/interview-detail');
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Selengkapnya',
-                              style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(width: 8),
-                            const Icon(LucideIcons.chevronRight, size: 16),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-        const SizedBox(height: 18),
-
-        // Rekrutmen Status
-        _buildSectionHeader('Rekrutmen'),
-        const SizedBox(height: 12),
-
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.tertiary8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Pendaftaran Berhasil Dikirim',
-                style: GoogleFonts.dmSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green.shade700,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Menunggu hasil penilaian administrasi dan wawancara.',
-                style: GoogleFonts.dmSans(fontSize: 12, color: AppColors.tertiary4),
-              ),
-              const SizedBox(height: 18),
-              
-              // View application form
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/candidate/detail');
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary8),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: 16),
+                  Text(
+                    !hasProfile
+                        ? 'Silakan lengkapi formulir identitas akun Anda di website portal utama untuk melanjutkan proses seleksi.'
+                        : status == 'registered'
+                            ? 'Profil Anda telah terdaftar. Silakan pilih jadwal wawancara yang tersedia.'
+                            : status == 'scheduled'
+                                ? 'Anda telah memilih jadwal wawancara. Silakan cek detail jadwal Anda di website.'
+                                : 'Proses seleksi sedang dievaluasi oleh tim penguji.',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.tertiary4,
+                      height: 1.5,
                     ),
                   ),
-                  child: Text(
-                    'Lihat Formulir Pendaftaran',
-                    style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // --- Reviewer Layout: Panel for reviewers ---
-  Widget _buildReviewerLayout(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Header Daftar Wawancara Hari Ini
-        _buildSectionHeader('Daftar Wawancara Hari Ini'),
-        const SizedBox(height: 12),
-
-        // Interview 1 Card
-        _buildReviewerInterviewCard(
-          context,
-          'Nizar Rizki Ardiansyah',
-          'Sesi 3 (13:00 s.d. 14:30)',
-          'Ruang AA.302',
-          '1',
-          Colors.blue.shade900,
-          Colors.blue.shade100,
-        ),
-        const SizedBox(height: 12),
-
-        // Interview 2 Card
-        _buildReviewerInterviewCard(
-          context,
-          'Satrio Eko Saputra',
-          'Sesi 4 (15:00 s.d. 16:30)',
-          'Ruang AA.303',
-          '2',
-          Colors.orange.shade900,
-          Colors.orange.shade100,
-        ),
-        const SizedBox(height: 12),
-        
-        Center(
-          child: TextButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Menampilkan semua jadwal...', style: GoogleFonts.dmSans(fontSize: 12)),
-                  backgroundColor: AppColors.primary,
-                ),
-              );
-            },
-            child: Text(
-              'Lihat Selengkapnya',
-              style: GoogleFonts.dmSans(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
+                ],
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 12),
-
-        // Top 3 Kandidat Section
-        _buildSectionHeader('Top 3 Kandidat (DSS Rank)'),
-        const SizedBox(height: 12),
-
-        // Rank 1 (Blue background)
-        _buildDssRankCard(1, 'Nizar Rizki Ardiansyah', '0.89', true),
-        const SizedBox(height: 8),
-
-        // Rank 2 (White background)
-        _buildDssRankCard(2, 'Satrio Eko Saputra', '0.76', false),
-        const SizedBox(height: 8),
-
-        // Rank 3 (White background)
-        _buildDssRankCard(3, 'Muhammad Farel', '0.72', false),
-        const SizedBox(height: 12),
-        
-        Center(
-          child: TextButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Membuka peringkat DSS lengkap...', style: GoogleFonts.dmSans(fontSize: 12)),
-                  backgroundColor: AppColors.primary,
-                ),
-              );
-            },
-            child: Text(
-              'Lihat Selengkapnya',
-              style: GoogleFonts.dmSans(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: GoogleFonts.dmSans(
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
-        color: AppColors.primary1,
+        ],
       ),
     );
   }
 
-  Widget _buildIconLabelRow(IconData icon, String label) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: AppColors.tertiary5),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: GoogleFonts.dmSans(
-            fontSize: 12,
-            color: AppColors.tertiary4,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
+  // ─────────────────────────────────────────────────────────────────
+  // 2. REVIEWER DASHBOARD
+  // ─────────────────────────────────────────────────────────────────
+  Widget _buildReviewerDashboard() {
+    final schedules = _reviewerSchedules ?? [];
 
-  Widget _buildReviewerInterviewCard(
-    BuildContext context,
-    String name,
-    String time,
-    String room,
-    String order,
-    Color orderTextColor,
-    Color orderBgColor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.tertiary8),
-      ),
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Header info
+          const Text(
+            'Jadwal Wawancara Departemen',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary1,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Daftar slot wawancara yang aktif di departemen Anda.',
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.tertiary5,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Expanded(
+            child: schedules.isEmpty
+                ? const Center(
+                    child: Text(
+                      'Tidak ada jadwal wawancara yang tersedia.',
+                      style: TextStyle(color: AppColors.tertiary5),
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: schedules.length,
+                    itemBuilder: (context, index) {
+                      final item = schedules[index];
+                      final date = item['date'] as String? ?? '-';
+                      final startTime = item['start_time'] as String? ?? '-';
+                      final endTime = item['end_time'] as String? ?? '-';
+                      final isBlocked = item['is_blocked'] as bool? ?? false;
+                      final booking = item['booking'] as Map<String, dynamic>?;
+
+                      final hasCandidate = booking != null && booking['candidate'] != null;
+                      final candidateUser = hasCandidate ? booking['candidate']['user'] as Map<String, dynamic>? : null;
+                      final candidateName = candidateUser != null ? candidateUser['name'] as String? : 'Tidak Ada';
+                      final candidateNim = hasCandidate ? booking['candidate']['nim'] as String? : '-';
+
+                      return Card(
+                        elevation: 0,
+                        margin: const EdgeInsets.only(bottom: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: const BorderSide(color: AppColors.primary8, width: 1),
+                        ),
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: hasCandidate ? AppColors.primary10 : AppColors.tertiary10,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  hasCandidate ? LucideIcons.user : LucideIcons.clock,
+                                  color: hasCandidate ? AppColors.primary : AppColors.tertiary5,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '$startTime - $endTime',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        color: AppColors.primary1,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        const Icon(LucideIcons.calendar, size: 14, color: AppColors.tertiary5),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          date,
+                                          style: const TextStyle(fontSize: 13, color: AppColors.tertiary5),
+                                        ),
+                                      ],
+                                    ),
+                                    const Divider(height: 20, color: AppColors.primary8),
+                                    Text(
+                                      hasCandidate ? 'Pendaftar: $candidateName' : 'Slot Kosong',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                        color: hasCandidate ? AppColors.primary1 : AppColors.tertiary5,
+                                      ),
+                                    ),
+                                    if (hasCandidate) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'NIM: $candidateNim',
+                                        style: const TextStyle(fontSize: 13, color: AppColors.tertiary5),
+                                      ),
+                                    ],
+                                    if (isBlocked) ...[
+                                      const SizedBox(height: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.lightRed,
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: const Text(
+                                          'Blocked',
+                                          style: TextStyle(fontSize: 11, color: AppColors.red, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // 3. ADMIN DASHBOARD
+  // ─────────────────────────────────────────────────────────────────
+  Widget _buildAdminDashboard() {
+    final stats = _adminStats ?? {};
+    final depts = _adminDepartments ?? [];
+
+    final totalCandidates = stats['total_candidates']?.toString() ?? '0';
+    final totalRegistered = stats['total_registered']?.toString() ?? '0';
+    final totalScheduled = stats['total_scheduled']?.toString() ?? '0';
+    final totalEvaluated = stats['total_evaluated']?.toString() ?? '0';
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Headline
+          const Text(
+            'Ringkasan Rekrutmen',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary1,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Stats Grid
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 1.4,
             children: [
-              Expanded(
-                child: Text(
-                  name,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 16,
+              _buildStatCard('Total Pendaftar', totalCandidates, LucideIcons.users, AppColors.primary),
+              _buildStatCard('Registrasi', totalRegistered, LucideIcons.clipboardList, AppColors.secondary),
+              _buildStatCard('Terjadwal', totalScheduled, LucideIcons.calendar, AppColors.yellow),
+              _buildStatCard('Terevaluasi', totalEvaluated, LucideIcons.checkCircle, Colors.green),
+            ],
+          ),
+          const SizedBox(height: 28),
+          // Announcement Toggle Card
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: AppColors.primary8, width: 1),
+            ),
+            color: Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Row(
+                children: [
+                  const Icon(LucideIcons.shield, color: AppColors.primary, size: 28),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Papan Pengumuman',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary1),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _isAnnouncementsPublished ? 'Hasil SPK dipublikasikan' : 'Hasil SPK masih disembunyikan',
+                          style: const TextStyle(fontSize: 13, color: AppColors.tertiary5),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: _isAnnouncementsPublished,
+                    onChanged: _togglePublishAnnouncements,
+                    activeTrackColor: AppColors.primary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 28),
+          const Text(
+            'Peminat per Departemen',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary1,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Departments List
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            color: Colors.white,
+            child: depts.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.all(24.0),
+                    child: Center(child: Text('Tidak ada data departemen.', style: TextStyle(color: AppColors.tertiary5))),
+                  )
+                : ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: depts.length,
+                    separatorBuilder: (context, index) => const Divider(height: 1, color: AppColors.primary8),
+                    itemBuilder: (context, index) {
+                      final item = depts[index];
+                      final name = item['name'] as String? ?? '-';
+                      final firstChoiceCount = item['first_choice_candidates_count']?.toString() ?? '0';
+                      final secondChoiceCount = item['second_choice_candidates_count']?.toString() ?? '0';
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: AppColors.primary1,
+                                ),
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  'Pilihan 1: $firstChoiceCount',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.primary),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Pilihan 2: $secondChoiceCount',
+                                  style: const TextStyle(fontSize: 12, color: AppColors.tertiary5),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary1,
                   ),
                 ),
-              ),
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: orderBgColor,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  order,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: orderTextColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildIconLabelRow(LucideIcons.clock, time),
-          const SizedBox(height: 6),
-          _buildIconLabelRow(LucideIcons.mapPin, room),
-          const SizedBox(height: 12),
-          
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                // In a real app this opens a review form. For the demo, show details
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Membuka peninjauan untuk $name...', style: GoogleFonts.dmSans(fontSize: 12)),
-                    backgroundColor: AppColors.primary,
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Selengkapnya', style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, fontSize: 12)),
-                  const SizedBox(width: 4),
-                  const Icon(LucideIcons.chevronRight, size: 14),
-                ],
+                Icon(icon, color: color, size: 22),
+              ],
+            ),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: AppColors.tertiary5,
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDssRankCard(int rank, String name, String score, bool isHighlighted) {
-    Color cardBg = isHighlighted ? AppColors.primary : Colors.white;
-    Color borderCol = isHighlighted ? Colors.transparent : AppColors.tertiary8;
-    Color nameColor = isHighlighted ? Colors.white : AppColors.primary1;
-    Color scoreColor = isHighlighted ? Colors.white : AppColors.primary2;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderCol),
-        boxShadow: [
-          if (isHighlighted)
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.15),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Rank Badge
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: rank == 1 ? AppColors.yellow : AppColors.primary,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              '$rank',
-              style: GoogleFonts.dmSans(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          
-          // Name
-          Expanded(
-            child: Text(
-              name,
-              style: GoogleFonts.dmSans(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: nameColor,
-              ),
-            ),
-          ),
-
-          // DSS Score
-          Text(
-            score,
-            style: GoogleFonts.dmSans(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: scoreColor,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

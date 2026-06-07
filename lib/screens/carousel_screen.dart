@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
+import '../widgets/page_indicator.dart';
 
 class CarouselScreen extends StatefulWidget {
   const CarouselScreen({super.key});
@@ -12,35 +12,45 @@ class CarouselScreen extends StatefulWidget {
 
 class _CarouselScreenState extends State<CarouselScreen> {
   final PageController _pageController = PageController();
-  int _currentPage = 0;
+  final AuthService _authService = AuthService();
+  int _currentIndex = 0;
 
-  final int _numPages = 3;
+  final List<Map<String, String>> _slides = [
+    {
+      'title': 'Selamat Datang di Aplikasi HIMATIK PNJ',
+      'body': 'Decision Support System untuk pemilihan anggota dan kepengurusan Himpunan Mahasiswa Teknik Informatika dan Komputer PNJ.',
+      'type': 'welcome',
+    },
+    {
+      'title': 'Tentang Kami',
+      'body': 'Himpunan Mahasiswa Teknik Informatika dan Komputer (HIMATIK) PNJ adalah organisasi kemahasiswaan tingkat program studi yang berfungsi sebagai wadah aspirasi dan pengembangan potensi mahasiswa.',
+      'type': 'about',
+    },
+    {
+      'title': 'Visi & Misi',
+      'body': 'Visi:\nMenjadikan HIMATIK PNJ sebagai organisasi yang profesional, inovatif, dan kontributif secara internal maupun eksternal.\n\nMisi:\n1. Membangun kebersamaan dan kekeluargaan.\n2. Mengoptimalkan minat bakat dan akademik.\n3. Mewujudkan tata kelola organisasi yang transparan.\n4. Menjalin kolaborasi strategis dengan berbagai pihak.',
+      'type': 'vision',
+    },
+  ];
 
-  void _onPageChanged(int page) {
-    setState(() {
-      _currentPage = page;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _checkFirstTime();
   }
 
-  void _skip() {
-    Navigator.pushReplacementNamed(context, '/login');
-  }
-
-  void _nextPage() {
-    if (_currentPage < _numPages - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeIn,
-      );
-    } else {
-      _skip();
+  Future<void> _checkFirstTime() async {
+    final bool firstTime = await _authService.isFirstTime();
+    if (!firstTime && mounted) {
+      Navigator.pushReplacementNamed(context, '/login');
     }
   }
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
+  Future<void> _finishOnboarding() async {
+    await _authService.setFirstTimeDone();
+    if (mounted) {
+      Navigator.pushReplacementNamed(context, '/login');
+    }
   }
 
   @override
@@ -48,291 +58,125 @@ class _CarouselScreenState extends State<CarouselScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Blur Image
+          // Background Image with dark overlay
           Positioned.fill(
             child: Image.asset(
               'assets/img/bg_blur.png',
               fit: BoxFit.cover,
             ),
           ),
-          
-          // Gradient Overlay (Primary to Transparent, Bottom to Top)
           Positioned.fill(
             child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [
-                    AppColors.primary.withOpacity(0.85),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
+              color: AppColors.primary.withOpacity(0.85),
             ),
           ),
-
-          // Sliding Pages
-          PageView(
-            controller: _pageController,
-            onPageChanged: _onPageChanged,
-            children: [
-              _buildWelcomePage(),
-              _buildAboutPage(),
-              _buildVisionMissionPage(),
-            ],
-          ),
-
-          // Bottom Navigation Row & Indicators
-          Positioned(
-            left: 24,
-            right: 24,
-            bottom: 40,
+          // Page Content
+          SafeArea(
             child: Column(
               children: [
-                // Navigation buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Skip Button
-                    GestureDetector(
-                      onTap: _skip,
-                      child: Row(
-                        children: [
-                          Text(
-                            'Lewat',
-                            style: GoogleFonts.dmSans(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentIndex = index;
+                      });
+                    },
+                    itemCount: _slides.length,
+                    itemBuilder: (context, index) {
+                      final slide = _slides[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (slide['type'] == 'welcome') ...[
+                              Image.asset(
+                                'assets/img/logo.png',
+                                height: 120,
+                              ),
+                              const SizedBox(height: 40),
+                            ],
+                            Text(
+                              slide['title']!,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          const Icon(
-                            LucideIcons.chevronsRight,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Next/Done Button
-                    GestureDetector(
-                      onTap: _nextPage,
-                      child: Row(
-                        children: [
-                          Text(
-                            _currentPage == _numPages - 1 ? 'Ke Portal Login' : 'Lanjut',
-                            style: GoogleFonts.dmSans(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                            const SizedBox(height: 24),
+                            Text(
+                              slide['body']!,
+                              textAlign: slide['type'] == 'vision' ? TextAlign.left : TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 16,
+                                height: 1.6,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          const Icon(
-                            LucideIcons.arrowRight,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
-                const SizedBox(height: 18), // Normal gap
-
-                // Indicators (Horizontal segments)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(_numPages, (index) => _buildIndicator(index)),
+                // Page Indicator
+                PageIndicator(
+                  count: _slides.length,
+                  currentIndex: _currentIndex,
+                ),
+                const SizedBox(height: 48),
+                // Bottom controls
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Skip button (Only show if not on last page)
+                      _currentIndex < _slides.length - 1
+                          ? TextButton(
+                              onPressed: _finishOnboarding,
+                              child: const Text(
+                                'Lewat >|',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            )
+                          : const SizedBox(width: 80),
+                      // Next/Login button
+                      TextButton(
+                        onPressed: () {
+                          if (_currentIndex < _slides.length - 1) {
+                            _pageController.nextPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          } else {
+                            _finishOnboarding();
+                          }
+                        },
+                        child: Text(
+                          _currentIndex < _slides.length - 1 ? 'Lanjut →' : 'Ke Portal Login →',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildIndicator(int index) {
-    final bool isActive = index == _currentPage;
-    return Expanded(
-      child: Container(
-        height: 4,
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.white.withOpacity(0.4),
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-    );
-  }
-
-  // Slide 1: Welcome Page
-  Widget _buildWelcomePage() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Logo
-          Image.asset(
-            'assets/img/logo.png',
-            width: 140,
-            height: 140,
-          ),
-          const SizedBox(height: 18), // Normal gap
-
-          // Welcome Title (Maximum size 32)
-          Text(
-            'Selamat Datang di Aplikasi HIMATIK PNJ',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.dmSans(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              height: 1.2,
-            ),
-          ),
-          const SizedBox(height: 6), // Label to sublabel gap
-
-          // Subtitle
-          Text(
-            'Aplikasi manajemen',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.dmSans(
-              fontSize: 16,
-              color: Colors.white70,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Slide 2: Tentang Kami Page
-  Widget _buildAboutPage() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Title
-          Text(
-            'Tentang Kami',
-            style: GoogleFonts.dmSans(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 12), // Intermediate gap
-
-          // Description
-          Text(
-            'HIMATIK PNJ adalah lembaga kemahasiswaan formal di Jurusan Teknik Informatika dan Komputer Politeknik Negeri Jakarta. Organisasi ini bergerak di bidang keilmuan serta menjadi penggerak mahasiswa dalam meningkatkan kreativitas dan prestasi.',
-            style: GoogleFonts.dmSans(
-              fontSize: 16,
-              color: Colors.white.withOpacity(0.9),
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Slide 3: Visi Misi Page
-  Widget _buildVisionMissionPage() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Center(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Slide Title
-              Text(
-                'Visi & Misi',
-                style: GoogleFonts.dmSans(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 18), // Normal gap
-
-              // Visi Section
-              Text(
-                'Visi',
-                style: GoogleFonts.dmSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 6), // Label to sublabel gap
-              Text(
-                'Mewujudkan sinergi mahasiswa TIK dalam membangun HIMATIK yang berdaya, transparan, dan berpola pikir luas guna memberikan dampak nyata dan kebermanfaatan.',
-                style: GoogleFonts.dmSans(
-                  fontSize: 12,
-                  color: Colors.white.withOpacity(0.9),
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 12), // Intermediate gap
-
-              // Misi Section
-              Text(
-                'Misi',
-                style: GoogleFonts.dmSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 6), // Label to sublabel gap
-              _buildMisiItem('1', 'Menjadi wadah pengembangan kompetensi dan karakter mahasiswa TIK dengan menyelenggarakan program-program unggul di bidang akademik, teknologi, dan kreativitas.'),
-              const SizedBox(height: 6),
-              _buildMisiItem('2', 'Menjaga dan memperkuat budaya solidaritas dalam semua kegiatan HIMATIK.'),
-              const SizedBox(height: 6),
-              _buildMisiItem('3', 'Mendorong profesionalisme dalam kerja HIMATIK melalui transparansi dan publikasi kegiatan secara berkala.'),
-              const SizedBox(height: 6),
-              _buildMisiItem('4', 'Menanamkan nilai integritas dan tanggung jawab sosial sebagai dasar dalam setiap tindakan dan program HIMATIK.'),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMisiItem(String num, String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '$num. ',
-          style: GoogleFonts.dmSans(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        Expanded(
-          child: Text(
-            text,
-            style: GoogleFonts.dmSans(
-              fontSize: 12,
-              color: Colors.white.withOpacity(0.9),
-              height: 1.4,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
