@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_state.dart';
+import '../widgets/app_button.dart';
+import '../widgets/app_input.dart';
+import '../widgets/app_loading.dart';
 
 class VerificationScreen extends StatefulWidget {
   const VerificationScreen({super.key});
@@ -12,197 +15,208 @@ class VerificationScreen extends StatefulWidget {
 }
 
 class _VerificationScreenState extends State<VerificationScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _otpController = TextEditingController();
+  final TextEditingController _otpController = TextEditingController();
+  final AuthService _authService = AuthService();
+
+  bool _isLoading = false;
+  String? _otpError;
+  int _cooldownSeconds = 60;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startCooldown();
+  }
 
   @override
   void dispose() {
+    _timer?.cancel();
     _otpController.dispose();
     super.dispose();
   }
 
-  void _verifyPressed() {
-    if (_formKey.currentState!.validate()) {
-      // Set user role to candidate and log in
-      AppState.instance.login(AppState.instance.email.isNotEmpty ? AppState.instance.email : 'nizar@stu.pnj.ac.id');
-      
+  void _startCooldown() {
+    setState(() {
+      _cooldownSeconds = 60;
+    });
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_cooldownSeconds > 0) {
+        setState(() {
+          _cooldownSeconds--;
+        });
+      } else {
+        _timer?.cancel();
+      }
+    });
+  }
+
+  void _resendCode() async {
+    if (_cooldownSeconds > 0) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final response = await _authService.resendOtp();
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (response['success'] == true) {
+      _startCooldown();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Email berhasil diverifikasi!',
-            style: GoogleFonts.dmSans(color: Colors.white, fontSize: 12),
-          ),
+          content: Text(response['message'] as String),
           backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
         ),
       );
-
-      // Navigate straight to Candidate Profile setup (CandidateForm1)
-      Navigator.pushReplacementNamed(context, '/candidate/form-1');
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response['message'] as String),
+          backgroundColor: AppColors.red,
+        ),
+      );
     }
   }
 
-  void _resendOtp() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Kode OTP baru telah dikirim ke email Anda.',
-          style: GoogleFonts.dmSans(color: Colors.white, fontSize: 12),
+  void _verifyOtp() async {
+    setState(() {
+      _otpError = null;
+    });
+
+    final String otp = _otpController.text.trim();
+
+    if (otp.isEmpty) {
+      setState(() {
+        _otpError = 'OTP wajib diisi';
+      });
+      return;
+    } else if (otp.length != 6 || int.tryParse(otp) == null) {
+      setState(() {
+        _otpError = 'Kode OTP harus berupa 6 digit angka';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final response = await _authService.verifyOtp(otp);
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (response['success'] == true) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response['message'] as String),
+          backgroundColor: Colors.green,
         ),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+      );
+      // On success, redirect to dashboard or registration details
+      final String nextStep = response['next_step'] as String;
+      if (nextStep == 'candidate_registration') {
+        Navigator.pushReplacementNamed(context, '/dashboard');
+      } else {
+        Navigator.pushReplacementNamed(context, '/dashboard');
+      }
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response['message'] as String),
+          backgroundColor: AppColors.red,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: Row(
-          children: [
-            const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(LucideIcons.arrowLeft, color: AppColors.primary1),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ],
-        ),
-        leadingWidth: 56,
-        titleSpacing: 0,
-        title: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: Text(
-            'Kembali',
-            style: GoogleFonts.dmSans(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+    return AppLoadingOverlay(
+      isLoading: _isLoading,
+      child: Scaffold(
+        backgroundColor: AppColors.tertiary,
+        appBar: AppBar(
+          title: const Text(
+            'Verifikasi Email',
+            style: TextStyle(
               color: AppColors.primary1,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
             ),
           ),
+          leading: IconButton(
+            icon: const Icon(LucideIcons.arrowLeft),
+            onPressed: () => Navigator.pop(context),
+          ),
         ),
-      ),
-      body: SafeArea(
-        child: Center(
+        body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Title (Max size 32)
-                  Text(
-                    'Verifikasi Email',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary1,
-                      height: 1.2,
-                    ),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Verifikasi Email Anda',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary1,
                   ),
-                  const SizedBox(height: 6), // Label to sublabel gap
-
-                  // Subtitle
-                  Text(
-                    'Masukkan kode OTP yang telah diberikan ke email yang telah kamu masukkan',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 12,
-                      color: AppColors.tertiary4,
-                      height: 1.4,
-                    ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Kami telah mengirimkan kode verifikasi 6 digit ke email pendaftaran Anda. Silakan masukkan kode tersebut di bawah ini.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.tertiary4,
                   ),
-                  const SizedBox(height: 18), // Normal gap
-
-                  // OTP Input
-                  Text(
-                    'Kode OTP',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary2,
-                    ),
-                  ),
-                  const SizedBox(height: 6), // Label to input gap
-                  TextFormField(
-                    controller: _otpController,
-                    keyboardType: TextInputType.number,
-                    style: GoogleFonts.dmSans(fontSize: 16, letterSpacing: 4),
-                    textAlign: TextAlign.center,
-                    decoration: const InputDecoration(
-                      hintText: 'Masukkan Kode OTP',
-                      hintStyle: TextStyle(letterSpacing: 0),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Kode OTP tidak boleh kosong';
-                      }
-                      if (value.length < 4) {
-                        return 'Kode OTP minimal 4 digit';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12), // Intermediate gap
-
-                  // Resend Link
-                  Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Tidak terkirim? ',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 12,
-                            color: AppColors.tertiary4,
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: _resendOtp,
-                          child: Text(
-                            'Kirim lagi',
-                            style: GoogleFonts.dmSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32), // Custom spacing to separate form from button
-
-                  // Verify Button
-                  ElevatedButton(
-                    onPressed: _verifyPressed,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                ),
+                const SizedBox(height: 40),
+                AppTextField(
+                  label: 'Kode OTP',
+                  placeholder: 'Masukkan 6 digit OTP',
+                  controller: _otpController,
+                  keyboardType: TextInputType.number,
+                  prefixIcon: LucideIcons.check,
+                  errorText: _otpError,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _cooldownSeconds > 0
+                          ? 'Kirim ulang kode dalam ($_cooldownSeconds) detik'
+                          : 'Tidak menerima kode? ',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.tertiary4,
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Verifikasi',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Icon(LucideIcons.checkCircle, size: 18),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                    if (_cooldownSeconds == 0)
+                      AppTextButton(
+                        text: 'Kirim Ulang',
+                        onPressed: _resendCode,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 40),
+                AppPrimaryButton(
+                  text: 'Verifikasi ✓',
+                  onPressed: _verifyOtp,
+                ),
+              ],
             ),
           ),
         ),
