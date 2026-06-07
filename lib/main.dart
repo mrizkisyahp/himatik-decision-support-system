@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'config/api_config.dart';
 import 'screens/carousel_screen.dart';
 import 'screens/portal_screen.dart';
 import 'screens/registration_account_screen.dart';
@@ -7,7 +8,9 @@ import 'screens/verification_screen.dart';
 import 'services/auth_service.dart';
 import 'theme/app_colors.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await ApiConfig.detectActiveBaseUrl();
   runApp(const MainApp());
 }
 
