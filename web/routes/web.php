@@ -43,32 +43,34 @@ Route::middleware('auth')->group(function () {
         Route::get('/candidate/interview-detail', [CandidateWebController::class, 'showInterviewDetail'])->name('candidate.interview.detail');
         Route::get('/candidate/registration-form', [CandidateWebController::class, 'showRegistrationForm'])->name('candidate.registration.form');
         Route::get('/candidate/registration-attachments', [CandidateWebController::class, 'showRegistrationAttachments'])->name('candidate.registration.attachments');
-        Route::get('/candidate/apply/{openRecruitment}', [CandidateWebController::class, 'showApplyStartPage'])->name('candidate.apply.start');
-        Route::post('/candidate/apply', [CandidateWebController::class, 'applyOprec'])->name('candidate.apply.post');
-        Route::get('/candidate/preferences', [CandidateWebController::class, 'showPreferencesForm'])->name('candidate.preferences.view');
-        Route::post('/candidate/preferences', [CandidateWebController::class, 'savePreferences'])->name('candidate.preferences.post');
-        
-        Route::get('/candidate/experience', [CandidateWebController::class, 'showExperienceForm'])->name('candidate.experience.view');
-        Route::post('/candidate/experience/education', [CandidateWebController::class, 'storeEducation'])->name('candidate.education.store');
-        Route::post('/candidate/experience/education/{id}/delete', [CandidateWebController::class, 'destroyEducation'])->name('candidate.education.destroy');
-        Route::post('/candidate/experience/organization', [CandidateWebController::class, 'storeOrganization'])->name('candidate.organization.store');
-        Route::post('/candidate/experience/organization/{id}/delete', [CandidateWebController::class, 'destroyOrganization'])->name('candidate.organization.destroy');
-        Route::post('/candidate/experience/committee', [CandidateWebController::class, 'storeCommittee'])->name('candidate.committee.store');
-        Route::post('/candidate/experience/committee/{id}/delete', [CandidateWebController::class, 'destroyCommittee'])->name('candidate.committee.destroy');
-        Route::post('/candidate/experience/next', [CandidateWebController::class, 'nextFromExperience'])->name('candidate.experience.next');
+        Route::middleware('check.oprec.active')->group(function () {
+            Route::get('/candidate/apply/{openRecruitment}', [CandidateWebController::class, 'showApplyStartPage'])->name('candidate.apply.start');
+            Route::post('/candidate/apply', [CandidateWebController::class, 'applyOprec'])->name('candidate.apply.post');
+            Route::get('/candidate/preferences', [CandidateWebController::class, 'showPreferencesForm'])->name('candidate.preferences.view');
+            Route::post('/candidate/preferences', [CandidateWebController::class, 'savePreferences'])->name('candidate.preferences.post');
+            
+            Route::get('/candidate/experience', [CandidateWebController::class, 'showExperienceForm'])->name('candidate.experience.view');
+            Route::post('/candidate/experience/education', [CandidateWebController::class, 'storeEducation'])->name('candidate.education.store');
+            Route::post('/candidate/experience/education/{id}/delete', [CandidateWebController::class, 'destroyEducation'])->name('candidate.education.destroy');
+            Route::post('/candidate/experience/organization', [CandidateWebController::class, 'storeOrganization'])->name('candidate.organization.store');
+            Route::post('/candidate/experience/organization/{id}/delete', [CandidateWebController::class, 'destroyOrganization'])->name('candidate.organization.destroy');
+            Route::post('/candidate/experience/committee', [CandidateWebController::class, 'storeCommittee'])->name('candidate.committee.store');
+            Route::post('/candidate/experience/committee/{id}/delete', [CandidateWebController::class, 'destroyCommittee'])->name('candidate.committee.destroy');
+            Route::post('/candidate/experience/next', [CandidateWebController::class, 'nextFromExperience'])->name('candidate.experience.next');
 
-        Route::get('/candidate/skills-facilities', [CandidateWebController::class, 'showSkillsFacilitiesForm'])->name('candidate.skills.view');
-        Route::post('/candidate/skills', [CandidateWebController::class, 'storeSkill'])->name('candidate.skill.store');
-        Route::post('/candidate/skills/{id}/delete', [CandidateWebController::class, 'destroySkill'])->name('candidate.skill.destroy');
-        Route::post('/candidate/facilities', [CandidateWebController::class, 'storeFacility'])->name('candidate.facility.store');
-        Route::post('/candidate/facilities/{id}/delete', [CandidateWebController::class, 'destroyFacility'])->name('candidate.facility.destroy');
-        Route::post('/candidate/skills-facilities/next', [CandidateWebController::class, 'nextFromSkillsFacilities'])->name('candidate.skills.next');
+            Route::get('/candidate/skills-facilities', [CandidateWebController::class, 'showSkillsFacilitiesForm'])->name('candidate.skills.view');
+            Route::post('/candidate/skills', [CandidateWebController::class, 'storeSkill'])->name('candidate.skill.store');
+            Route::post('/candidate/skills/{id}/delete', [CandidateWebController::class, 'destroySkill'])->name('candidate.skill.destroy');
+            Route::post('/candidate/facilities', [CandidateWebController::class, 'storeFacility'])->name('candidate.facility.store');
+            Route::post('/candidate/facilities/{id}/delete', [CandidateWebController::class, 'destroyFacility'])->name('candidate.facility.destroy');
+            Route::post('/candidate/skills-facilities/next', [CandidateWebController::class, 'nextFromSkillsFacilities'])->name('candidate.skills.next');
 
-        Route::get('/candidate/documents', [CandidateWebController::class, 'showDocumentsForm'])->name('candidate.documents.view');
-        Route::post('/candidate/documents', [CandidateWebController::class, 'saveDocuments'])->name('candidate.documents.post');
+            Route::get('/candidate/documents', [CandidateWebController::class, 'showDocumentsForm'])->name('candidate.documents.view');
+            Route::post('/candidate/documents', [CandidateWebController::class, 'saveDocuments'])->name('candidate.documents.post');
 
-        Route::get('/candidate/signatures', [CandidateWebController::class, 'showSignaturesForm'])->name('candidate.signatures.view');
-        Route::post('/candidate/signatures', [CandidateWebController::class, 'saveSignatures'])->name('candidate.signatures.post');
+            Route::get('/candidate/signatures', [CandidateWebController::class, 'showSignaturesForm'])->name('candidate.signatures.view');
+            Route::post('/candidate/signatures', [CandidateWebController::class, 'saveSignatures'])->name('candidate.signatures.post');
+        });
     });
 
     Route::middleware('role:interviewer')->group(function () {
