@@ -887,10 +887,18 @@ class CandidateWebController extends Controller
         }
 
         $path = $candidate->$field;
-        if (!$path || !\Illuminate\Support\Facades\Storage::disk('local')->exists($path)) {
+        if (!$path) {
             abort(404, 'Document not found.');
         }
 
-        return \Illuminate\Support\Facades\Storage::disk('local')->response($path);
+        $storage = \Illuminate\Support\Facades\Storage::disk('public')->exists($path)
+            ? \Illuminate\Support\Facades\Storage::disk('public')
+            : \Illuminate\Support\Facades\Storage::disk('local');
+
+        if (!$storage->exists($path)) {
+            abort(404, 'Document not found.');
+        }
+
+        return $storage->response($path);
     }
 }

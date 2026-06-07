@@ -107,23 +107,23 @@ class BladeDocsController extends Controller
                     view: 'candidate/register.blade.php',
                     controller: 'Web\CandidateWebController',
                     action: 'showCandidateRegisterForm',
-                    description: 'Verified candidate profile registration form with department choices, files, essays, and repeatable history sections.',
+                    description: 'Verified candidate identity/contact form. This page updates user identity fields before the candidate continues from the dashboard.',
                     variables: [
-                        ['$departments', 'Collection<Departmentsbiro>', 'Active departments/biros for first and second choice.'],
+                        ['$departments', 'Collection<Departmentsbiro>', 'Active departments/biros loaded by the controller.'],
                         ['$candidateType', 'string|null', 'Candidate type from query/session.'],
                     ],
-                    models: ['Candidate', 'Departmentsbiro', 'CandidateEducation', 'CandidateOrganization', 'CandidateCommittee', 'CandidateSkill', 'CandidateFacility'],
+                    models: ['User', 'Departmentsbiro'],
                     postFields: [
-                        ['candidate_type', 'string', 'required|in:staff,bph', 'Registration type.'],
-                        ['nim', 'string', 'required|digits:10|unique:candidates,nim', 'Student ID.'],
+                        ['name', 'string', 'required|string|max:255', 'Full name.'],
+                        ['nickname', 'string', 'required|string|max:255', 'Nickname.'],
+                        ['nim', 'string', 'required|digits:10|unique:users,nim', 'Student ID stored on users.'],
                         ['prodi', 'string', 'required|in:Teknik Informatika,Teknik Multimedia dan Jaringan,Teknik Multimedia dan Digital', 'Study program.'],
-                        ['first_choice_id', 'int', 'required|active departmentsbiro', 'First department choice.'],
-                        ['second_choice_id', 'int|null', 'nullable|different:first_choice_id|active departmentsbiro', 'Second department choice.'],
-                        ['photo/files/signatures', 'files', 'required with mime/size rules', 'Required registration uploads.'],
-                        ['educations/organizations/committees/skills/facilities', 'arrays', 'nullable arrays with nested rules', 'Repeatable profile sections.'],
+                        ['kelas', 'string', 'required|string|max:50', 'Class.'],
+                        ['phone', 'string', 'required|string|max:20', 'Phone number.'],
+                        ['address', 'string', 'required|string', 'Full address.'],
                     ],
                     postRoute: 'POST /register-candidate -> CandidateWebController@registerCandidate',
-                    services: ['CandidateProfileService', 'OpenRecruitmentService']
+                    services: ['OpenRecruitmentService']
                 ),
                 $this->route(
                     id: 'candidate-dashboard',
@@ -141,6 +141,113 @@ class BladeDocsController extends Controller
                     models: ['Candidate', 'Announcement']
                 ),
                 $this->route(
+                    id: 'candidate-apply-start',
+                    uri: '/candidate/apply/{openRecruitment}',
+                    name: 'candidate.apply.start',
+                    middleware: ['auth', 'role:candidate', 'check.oprec.active'],
+                    view: 'candidate/start.blade.php',
+                    controller: 'Web\CandidateWebController',
+                    action: 'showApplyStartPage',
+                    description: 'Start page for a selected Staff/BPH open recruitment period.',
+                    variables: [
+                        ['$oprec', 'OpenRecruitment', 'Selected active recruitment period.'],
+                    ],
+                    models: ['OpenRecruitment']
+                ),
+                $this->route(
+                    id: 'candidate-preferences',
+                    uri: '/candidate/preferences',
+                    name: 'candidate.preferences.view',
+                    middleware: ['auth', 'role:candidate', 'check.oprec.active'],
+                    view: 'candidate/preferences.blade.php',
+                    controller: 'Web\CandidateWebController',
+                    action: 'showPreferencesForm',
+                    description: 'Department choices and essay answers. Creates the candidate row if it does not exist.',
+                    variables: [
+                        ['$departments', 'Collection<Departmentsbiro>', 'Active department choices.'],
+                        ['$oprec', 'OpenRecruitment|null', 'Selected recruitment period from session.'],
+                        ['$candidate', 'Candidate|null', 'Existing candidate profile if already started.'],
+                    ],
+                    models: ['Candidate', 'Departmentsbiro', 'CandidateDepartmentChoice', 'OpenRecruitment'],
+                    postFields: [
+                        ['open_recruitment_id', 'int', 'required|exists:open_recruitments,id', 'Selected recruitment period.'],
+                        ['first_choice_id', 'int', 'required|exists:departmentsbiro,id', 'First department choice.'],
+                        ['second_choice_id', 'int|null', 'nullable|different:first_choice_id|exists:departmentsbiro,id', 'Second department choice.'],
+                        ['department_choice_reason', 'string', 'required|string', 'Combined department choice reason.'],
+                        ['weakness_description', 'string', 'required|string', 'Self-described weakness.'],
+                        ['contribution_plan', 'string', 'required|string', 'Concrete contribution plan.'],
+                    ],
+                    postRoute: 'POST /candidate/preferences -> CandidateWebController@savePreferences'
+                ),
+                $this->route(
+                    id: 'candidate-experience',
+                    uri: '/candidate/experience',
+                    name: 'candidate.experience.view',
+                    middleware: ['auth', 'role:candidate', 'check.oprec.active'],
+                    view: 'candidate/experience.blade.php',
+                    controller: 'Web\CandidateWebController',
+                    action: 'showExperienceForm',
+                    description: 'Education, organization, and committee repeatable sections.',
+                    variables: [
+                        ['$candidate', 'Candidate', 'Current candidate with repeatable records.'],
+                    ],
+                    models: ['Candidate', 'CandidateEducation', 'CandidateOrganization', 'CandidateCommittee']
+                ),
+                $this->route(
+                    id: 'candidate-skills-facilities',
+                    uri: '/candidate/skills-facilities',
+                    name: 'candidate.skills.view',
+                    middleware: ['auth', 'role:candidate', 'check.oprec.active'],
+                    view: 'candidate/skills_facilities.blade.php',
+                    controller: 'Web\CandidateWebController',
+                    action: 'showSkillsFacilitiesForm',
+                    description: 'Skills and facilities repeatable sections.',
+                    variables: [
+                        ['$candidate', 'Candidate', 'Current candidate with skills and facilities.'],
+                    ],
+                    models: ['Candidate', 'CandidateSkill', 'CandidateFacility']
+                ),
+                $this->route(
+                    id: 'candidate-documents',
+                    uri: '/candidate/documents',
+                    name: 'candidate.documents.view',
+                    middleware: ['auth', 'role:candidate', 'check.oprec.active'],
+                    view: 'candidate/documents.blade.php',
+                    controller: 'Web\CandidateWebController',
+                    action: 'showDocumentsForm',
+                    description: 'Document upload page for photo, Instagram proof, YouTube proof, and political statement.',
+                    variables: [
+                        ['$candidate', 'Candidate', 'Current candidate document paths.'],
+                    ],
+                    models: ['Candidate'],
+                    postFields: [
+                        ['photo', 'file|null', 'nullable|image|max:5120', 'Candidate photo.'],
+                        ['instagram_proof', 'file|null', 'nullable|image|max:5120', 'Instagram proof.'],
+                        ['youtube_proof', 'file|null', 'nullable|image|max:5120', 'YouTube proof.'],
+                        ['political_statement', 'file|null', 'nullable|file|max:5120', 'Political statement file.'],
+                    ],
+                    postRoute: 'POST /candidate/documents -> CandidateWebController@saveDocuments'
+                ),
+                $this->route(
+                    id: 'candidate-signatures',
+                    uri: '/candidate/signatures',
+                    name: 'candidate.signatures.view',
+                    middleware: ['auth', 'role:candidate', 'check.oprec.active'],
+                    view: 'candidate/signatures.blade.php',
+                    controller: 'Web\CandidateWebController',
+                    action: 'showSignaturesForm',
+                    description: 'Candidate and parent signature upload page.',
+                    variables: [
+                        ['$candidate', 'Candidate', 'Current candidate signature paths.'],
+                    ],
+                    models: ['Candidate'],
+                    postFields: [
+                        ['candidate_signature', 'file|null', 'nullable|image|max:2048', 'Candidate signature image.'],
+                        ['parent_signature', 'file|null', 'nullable|image|max:2048', 'Parent signature image.'],
+                    ],
+                    postRoute: 'POST /candidate/signatures -> CandidateWebController@saveSignatures'
+                ),
+                $this->route(
                     id: 'candidate-schedule',
                     uri: '/schedule',
                     name: 'candidate.schedule.view',
@@ -151,17 +258,63 @@ class BladeDocsController extends Controller
                     description: 'Candidate first-choice department interview schedule selection and status page.',
                     variables: [
                         ['$candidate', 'Candidate', 'Authenticated candidate profile.'],
-                        ['$availableSlots', 'Collection<InterviewSchedule>', 'Active unbooked first-choice department slots plus current booking.'],
                         ['$announcement', 'Announcement|null', 'Final decision if available.'],
                         ['$dssResults', 'array|null', 'DSS detail if published/evaluated.'],
                         ['$currentBookedSlotId', 'int|null', 'Current booked schedule ID.'],
                         ['$openRecruitment', 'OpenRecruitment|null', 'Current candidate-type recruitment period.'],
+                        ['$dates', 'Collection', 'Schedule matrix dates.'],
+                        ['$timeSlots', 'Collection', 'Schedule matrix time rows.'],
+                        ['$schedules', 'Collection<InterviewSchedule>', 'First-choice department schedule rows.'],
+                        ['$firstChoiceDepartmentId', 'int|null', 'First-choice department ID.'],
                     ],
                     models: ['Candidate', 'InterviewSchedule', 'CandidateInterviewSchedule', 'Announcement'],
                     postFields: [
                         ['schedule_id', 'int', 'required|exists:interview_schedules,id', 'Chosen slot.'],
                     ],
                     postRoute: 'POST /schedule/book -> CandidateWebController@bookSchedule'
+                ),
+                $this->route(
+                    id: 'candidate-interview-detail',
+                    uri: '/candidate/interview-detail',
+                    name: 'candidate.interview.detail',
+                    middleware: ['auth', 'role:candidate'],
+                    view: 'candidate/interview-detail.blade.php',
+                    controller: 'Web\CandidateWebController',
+                    action: 'showInterviewDetail',
+                    description: 'Candidate selected interview schedule detail page.',
+                    variables: [
+                        ['$candidate', 'Candidate', 'Authenticated candidate profile.'],
+                        ['$schedule', 'CandidateInterviewSchedule|null', 'Selected schedule relation.'],
+                    ],
+                    models: ['Candidate', 'CandidateInterviewSchedule', 'InterviewSchedule']
+                ),
+                $this->route(
+                    id: 'candidate-registration-form-preview',
+                    uri: '/candidate/registration-form',
+                    name: 'candidate.registration.form',
+                    middleware: ['auth', 'role:candidate'],
+                    view: 'candidate/registration-form.blade.php',
+                    controller: 'Web\CandidateWebController',
+                    action: 'showRegistrationForm',
+                    description: 'Candidate registration profile preview page.',
+                    variables: [
+                        ['$candidate', 'Candidate', 'Authenticated candidate profile.'],
+                    ],
+                    models: ['Candidate']
+                ),
+                $this->route(
+                    id: 'candidate-registration-attachments',
+                    uri: '/candidate/registration-attachments',
+                    name: 'candidate.registration.attachments',
+                    middleware: ['auth', 'role:candidate'],
+                    view: 'candidate/registration-attachments.blade.php',
+                    controller: 'Web\CandidateWebController',
+                    action: 'showRegistrationAttachments',
+                    description: 'Candidate uploaded attachment preview page.',
+                    variables: [
+                        ['$candidate', 'Candidate', 'Authenticated candidate profile.'],
+                    ],
+                    models: ['Candidate']
                 ),
             ],
             'Interviewer (auth)' => [

@@ -17,8 +17,8 @@ class InterviewerApiController extends Controller
     /**
      * Get Interviewer's Schedules
      *
-     * Returns all interview slots assigned to the currently logged-in interviewer,
-     * with candidate and department details. Accessible by both `interviewer` and `admin` roles.
+     * Returns interview slots for the currently logged-in interviewer's assigned department,
+     * with booked candidate and department details.
      *
      * @group Interviewer
      * @authenticated
@@ -28,9 +28,10 @@ class InterviewerApiController extends Controller
      *   "data": [
      *     {
      *       "id": 1,
-     *       "session_name": "Sesi Pagi A",
-     *       "scheduled_at": "2025-08-15T09:00:00.000000Z",
-     *       "location": "Ruang Rapat HIMATIK",
+     *       "date": "2026-06-10",
+     *       "start_time": "09:00:00",
+     *       "end_time": "10:00:00",
+     *       "is_blocked": false,
      *       "candidate": {
      *         "id": 1,
      *         "nim": "2211501234",
@@ -55,9 +56,21 @@ class InterviewerApiController extends Controller
             ], 403);
         }
 
-        $schedules = $interviewer->interviewSchedules()
-            ->with(['department', 'booking.candidate.user', 'booking.candidate.departmentChoices.department'])
-            ->orderBy('scheduled_at', 'asc')
+        if (!$interviewer->department_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Interviewer belum memiliki departemen/biro yang ditugaskan.',
+            ], 422);
+        }
+
+        $schedules = \App\Models\InterviewSchedule::with([
+                'department',
+                'booking.candidate.user',
+                'booking.candidate.departmentChoices.department',
+            ])
+            ->where('department_id', $interviewer->department_id)
+            ->orderBy('date', 'asc')
+            ->orderBy('start_time', 'asc')
             ->get();
 
         return response()->json([

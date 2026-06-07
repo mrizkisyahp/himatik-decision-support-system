@@ -296,10 +296,11 @@ class CandidateApiController extends Controller
      *   "data": [
      *     {
      *       "id": 3,
-     *       "session_name": "Sesi Pagi A",
-     *       "scheduled_at": "2025-08-15T09:00:00.000000Z",
-     *       "location": "Ruang Rapat HIMATIK",
-     *       "candidate_id": null
+     *       "department_id": 1,
+     *       "date": "2026-06-10",
+     *       "start_time": "09:00:00",
+     *       "end_time": "10:00:00",
+     *       "is_blocked": false
      *     }
      *   ],
      *   "current_booked_slot_id": null
@@ -361,10 +362,11 @@ class CandidateApiController extends Controller
      *   "message": "Schedule successfully booked!",
      *   "booked_slot": {
      *     "id": 3,
-     *     "session_name": "Sesi Pagi A",
-     *     "scheduled_at": "2025-08-15T09:00:00.000000Z",
-     *     "location": "Ruang Rapat HIMATIK",
-     *     "candidate_id": 1
+     *     "department_id": 1,
+     *     "date": "2026-06-10",
+     *     "start_time": "09:00:00",
+     *     "end_time": "10:00:00",
+     *     "is_blocked": false
      *   }
      * }
      */

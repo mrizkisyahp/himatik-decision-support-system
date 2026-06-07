@@ -21,6 +21,8 @@ use App\Services\OpenRecruitmentService;
 use App\Services\ProfileMatchingService;
 use App\Support\SpkCriteriaDefaults;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
@@ -948,20 +950,24 @@ class AdminWebController extends Controller
                 ->first();
                 
             if ($openRecruitment) {
-                $quotaRecord = OpenRecruitmentQuota::where('open_recruitment_id', $openRecruitment->id)
+                $quotaRecord = OpenRecruitmentQuota::where('candidate_type', $candidate->candidate_type)
                     ->where('department_id', $departmentId)
                     ->first();
-                    
-                if ($quotaRecord) {
-                    $acceptedCount = Announcement::where('assigned_department_id', $departmentId)
-                        ->where('status', 'accepted')
-                        ->where('candidate_id', '!=', $candidate->id)
-                        ->count();
-                        
-                    if ($acceptedCount >= $quotaRecord->quota) {
-                        $deptName = \App\Models\Departmentsbiro::find($departmentId)->name;
-                        return back()->with('error', "Kuota penerimaan untuk departemen {$deptName} sudah penuh (Maks: {$quotaRecord->quota}).");
-                    }
+
+                if (!$quotaRecord) {
+                    $deptName = Departmentsbiro::find($departmentId)?->name ?? 'departemen terpilih';
+                    return back()->with('error', "Kuota penerimaan untuk {$deptName} pada tipe {$candidate->candidate_type} belum dikonfigurasi.");
+                }
+
+                $acceptedCount = Announcement::where('assigned_department_id', $departmentId)
+                    ->where('status', 'accepted')
+                    ->whereHas('candidate', fn($query) => $query->where('candidate_type', $candidate->candidate_type))
+                    ->where('candidate_id', '!=', $candidate->id)
+                    ->count();
+
+                if ($acceptedCount >= $quotaRecord->quota) {
+                    $deptName = Departmentsbiro::find($departmentId)?->name ?? 'departemen terpilih';
+                    return back()->with('error', "Kuota penerimaan untuk departemen {$deptName} pada tipe {$candidate->candidate_type} sudah penuh (Maks: {$quotaRecord->quota}).");
                 }
             }
         }

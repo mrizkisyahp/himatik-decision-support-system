@@ -9,6 +9,7 @@ use App\Models\DefaultEvaluationCriteria;
 use App\Models\EvaluationCriteria;
 use App\Models\InterviewSchedule;
 use App\Models\Announcement;
+use App\Models\OpenRecruitmentQuota;
 use App\Models\User;
 use App\Services\ProfileMatchingService;
 use App\Support\SpkCriteriaDefaults;
@@ -130,23 +131,30 @@ class AdminApiController extends Controller
                 ->first();
                 
             if ($openRecruitment) {
-                $quotaRecord = \App\Models\OpenRecruitmentQuota::where('open_recruitment_id', $openRecruitment->id)
+                $quotaRecord = OpenRecruitmentQuota::where('candidate_type', $candidate->candidate_type)
                     ->where('department_id', $departmentId)
                     ->first();
-                    
-                if ($quotaRecord) {
-                    $acceptedCount = Announcement::where('assigned_department_id', $departmentId)
-                        ->where('status', 'accepted')
-                        ->where('candidate_id', '!=', $candidate->id)
-                        ->count();
-                        
-                    if ($acceptedCount >= $quotaRecord->quota) {
-                        $deptName = \App\Models\Departmentsbiro::find($departmentId)->name;
-                        return response()->json([
-                            'success' => false,
-                            'message' => "Kuota penerimaan untuk departemen {$deptName} sudah penuh (Maks: {$quotaRecord->quota})."
-                        ], 400);
-                    }
+
+                if (!$quotaRecord) {
+                    $deptName = Departmentsbiro::find($departmentId)?->name ?? 'departemen terpilih';
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Kuota penerimaan untuk {$deptName} pada tipe {$candidate->candidate_type} belum dikonfigurasi.",
+                    ], 422);
+                }
+
+                $acceptedCount = Announcement::where('assigned_department_id', $departmentId)
+                    ->where('status', 'accepted')
+                    ->whereHas('candidate', fn($query) => $query->where('candidate_type', $candidate->candidate_type))
+                    ->where('candidate_id', '!=', $candidate->id)
+                    ->count();
+
+                if ($acceptedCount >= $quotaRecord->quota) {
+                    $deptName = Departmentsbiro::find($departmentId)?->name ?? 'departemen terpilih';
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Kuota penerimaan untuk departemen {$deptName} pada tipe {$candidate->candidate_type} sudah penuh (Maks: {$quotaRecord->quota})."
+                    ], 400);
                 }
             }
         }
@@ -197,8 +205,12 @@ class AdminApiController extends Controller
      *
      * @bodyParam name string required Department name. Must be unique. Example: Biro Humas
      * @bodyParam description string optional Description. Example: Biro Hubungan Masyarakat
-     * @bodyParam core_factor_weight number required Core factor weight (0–1). Example: 0.6
-     * @bodyParam secondary_factor_weight number required Secondary factor weight (0–1). Example: 0.4
+     * @bodyParam personal_aspect_weight number required Personal aspect weight percentage (0-100). Example: 60
+     * @bodyParam organizational_aspect_weight number required Organizational aspect weight percentage (0-100). Example: 40
+     * @bodyParam core_factor_weight number required Core factor weight percentage (0-100). Example: 60
+     * @bodyParam secondary_factor_weight number required Secondary factor weight percentage (0-100). Example: 40
+     * @bodyParam slug string optional Department slug. If omitted, generated from name. Example: biro-humas
+     * @bodyParam is_active boolean optional Whether department is active. Example: true
      *
      * @response 201 {"success": true, "message": "Department created successfully!", "data": {"id": 3, "name": "Biro Humas"}}
      * @response 403 {"success": false, "message": "Unauthorized."}
@@ -238,8 +250,12 @@ class AdminApiController extends Controller
      * @urlParam department integer required The department ID. Example: 1
      * @bodyParam name string required Department name. Example: Biro Humas
      * @bodyParam description string optional Description. Example: Updated description
-     * @bodyParam core_factor_weight number required Core factor weight (0–1). Example: 0.6
-     * @bodyParam secondary_factor_weight number required Secondary factor weight (0–1). Example: 0.4
+     * @bodyParam personal_aspect_weight number required Personal aspect weight percentage (0-100). Example: 60
+     * @bodyParam organizational_aspect_weight number required Organizational aspect weight percentage (0-100). Example: 40
+     * @bodyParam core_factor_weight number required Core factor weight percentage (0-100). Example: 60
+     * @bodyParam secondary_factor_weight number required Secondary factor weight percentage (0-100). Example: 40
+     * @bodyParam slug string optional Department slug. Example: biro-humas
+     * @bodyParam is_active boolean optional Whether department is active. Example: true
      *
      * @response 200 {"success": true, "message": "Department updated successfully!", "data": {"id": 1, "name": "Biro Humas"}}
      * @response 403 {"success": false, "message": "Unauthorized."}
@@ -297,14 +313,14 @@ class AdminApiController extends Controller
     /**
      * Get All Schedules (Admin)
      *
-     * Returns all interview schedule slots with candidate and interviewer details. Admin only.
+     * Returns all interview schedule slots with department and booked candidate details. Admin only.
      *
      * @group Admin
      * @authenticated
      *
      * @response 200 {
      *   "success": true,
-     *   "data": [{"id": 1, "session_name": "Sesi Pagi A", "scheduled_at": "2025-08-15T09:00:00Z", "location": "Ruang Rapat", "candidate": null, "interviewers": []}]
+     *   "data": [{"id": 1, "department_id": 1, "date": "2026-06-10", "start_time": "09:00:00", "end_time": "10:00:00", "is_blocked": false}]
      * }
      * @response 403 {"success": false, "message": "Unauthorized."}
      */
@@ -312,7 +328,10 @@ class AdminApiController extends Controller
     {
         if ($err = $this->requireAdmin($request)) return $err;
 
-        $schedules = InterviewSchedule::with(['department', 'booking.candidate.user', 'interviewers'])->orderBy('scheduled_at')->get();
+        $schedules = InterviewSchedule::with(['department', 'booking.candidate.user'])
+            ->orderBy('date')
+            ->orderBy('start_time')
+            ->get();
 
         return response()->json(['success' => true, 'data' => $schedules]);
     }
@@ -320,17 +339,18 @@ class AdminApiController extends Controller
     /**
      * Create Interview Schedule
      *
-     * Create a new interview time slot and optionally assign interviewers. Admin only.
+     * Create a new department-owned interview time slot. Admin only.
      *
      * @group Admin
      * @authenticated
      *
-     * @bodyParam session_name string required Session name. Example: Sesi Pagi A
-     * @bodyParam scheduled_at string required Date and time (ISO 8601). Example: 2025-08-15T09:00:00
-     * @bodyParam location string required Location. Example: Ruang Rapat HIMATIK
-     * @bodyParam interviewer_ids integer[] optional Array of user IDs (interviewers) to assign. Example: [2, 3]
+     * @bodyParam department_id integer required Department ID. Example: 1
+     * @bodyParam date string required Interview date. Example: 2026-06-10
+     * @bodyParam start_time string required Start time. Example: 09:00
+     * @bodyParam end_time string required End time. Example: 10:00
+     * @bodyParam is_blocked boolean optional Whether this slot is blocked. Example: false
      *
-     * @response 201 {"success": true, "message": "Schedule created successfully!", "data": {"id": 5, "session_name": "Sesi Pagi A"}}
+     * @response 201 {"success": true, "message": "Schedule created successfully!", "data": {"id": 5, "date": "2026-06-10"}}
      * @response 403 {"success": false, "message": "Unauthorized."}
      */
     public function storeSchedule(Request $request)
@@ -338,28 +358,22 @@ class AdminApiController extends Controller
         if ($err = $this->requireAdmin($request)) return $err;
 
         $request->validate([
-            'session_name' => 'required|string|max:255',
             'department_id' => 'required|exists:departmentsbiro,id',
-            'scheduled_at' => 'required|date',
-            'location' => 'required|string|max:255',
-            'is_active' => 'sometimes|boolean',
-            'interviewer_ids' => 'nullable|array',
-            'interviewer_ids.*' => 'exists:users,id',
+            'date' => 'required|date',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i|after:start_time',
+            'is_blocked' => 'sometimes|boolean',
         ]);
 
         $schedule = InterviewSchedule::create([
             'department_id' => $request->department_id,
-            'session_name' => $request->session_name,
-            'scheduled_at' => $request->scheduled_at,
-            'location' => $request->location,
-            'is_active' => $request->boolean('is_active', true),
+            'date' => $request->date,
+            'start_time' => $request->start_time,
+            'end_time' => $request->end_time,
+            'is_blocked' => $request->boolean('is_blocked', false),
         ]);
 
-        if ($request->interviewer_ids) {
-            $schedule->interviewers()->sync($request->interviewer_ids);
-        }
-
-        return response()->json(['success' => true, 'message' => 'Schedule created successfully!', 'data' => $schedule->load('interviewers')], 201);
+        return response()->json(['success' => true, 'message' => 'Schedule created successfully!', 'data' => $schedule->load('department')], 201);
     }
 
     /**
@@ -371,10 +385,11 @@ class AdminApiController extends Controller
      * @authenticated
      *
      * @urlParam schedule integer required The schedule ID. Example: 1
-     * @bodyParam session_name string required Session name. Example: Sesi Pagi A
-     * @bodyParam scheduled_at string required Date and time (ISO 8601). Example: 2025-08-15T09:00:00
-     * @bodyParam location string required Location. Example: Ruang Rapat HIMATIK
-     * @bodyParam interviewer_ids integer[] optional Array of user IDs to assign. Example: [2, 3]
+     * @bodyParam department_id integer required Department ID. Example: 1
+     * @bodyParam date string required Interview date. Example: 2026-06-10
+     * @bodyParam start_time string required Start time. Example: 09:00
+     * @bodyParam end_time string required End time. Example: 10:00
+     * @bodyParam is_blocked boolean optional Whether this slot is blocked. Example: false
      *
      * @response 200 {"success": true, "message": "Schedule updated successfully!", "data": {}}
      * @response 403 {"success": false, "message": "Unauthorized."}
@@ -384,26 +399,22 @@ class AdminApiController extends Controller
         if ($err = $this->requireAdmin($request)) return $err;
 
         $request->validate([
-            'session_name' => 'required|string|max:255',
             'department_id' => 'required|exists:departmentsbiro,id',
-            'scheduled_at' => 'required|date',
-            'location' => 'required|string|max:255',
-            'is_active' => 'sometimes|boolean',
-            'interviewer_ids' => 'nullable|array',
-            'interviewer_ids.*' => 'exists:users,id',
+            'date' => 'required|date',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i|after:start_time',
+            'is_blocked' => 'sometimes|boolean',
         ]);
 
         $schedule->update([
             'department_id' => $request->department_id,
-            'session_name' => $request->session_name,
-            'scheduled_at' => $request->scheduled_at,
-            'location' => $request->location,
-            'is_active' => $request->boolean('is_active', $schedule->is_active),
+            'date' => $request->date,
+            'start_time' => $request->start_time,
+            'end_time' => $request->end_time,
+            'is_blocked' => $request->boolean('is_blocked', $schedule->is_blocked),
         ]);
 
-        $schedule->interviewers()->sync($request->interviewer_ids ?? []);
-
-        return response()->json(['success' => true, 'message' => 'Schedule updated successfully!', 'data' => $schedule->load('interviewers')]);
+        return response()->json(['success' => true, 'message' => 'Schedule updated successfully!', 'data' => $schedule->load('department')]);
     }
 
     /**
@@ -423,7 +434,6 @@ class AdminApiController extends Controller
     {
         if ($err = $this->requireAdmin($request)) return $err;
 
-        $schedule->interviewers()->detach();
         $schedule->delete();
 
         return response()->json(['success' => true, 'message' => 'Schedule deleted successfully.']);
