@@ -1,6 +1,6 @@
 # Blade Documentation
 
-Last reviewed: 2026-06-07
+Last reviewed: 2026-06-08
 
 Source of truth:
 
@@ -34,8 +34,10 @@ This document covers Blade-rendered web pages only: page purpose, route/view map
 
 | Page | Route | Name | Controller | View | Access | Variables | Purpose | Status | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Login | `GET /login` | `login` | `AuthWebController@showLoginForm` | `resources/views/auth/login.blade.php` | Guest | none | Login page for all roles. | Functional | `POST /login` authenticates and redirects by role. |
-| Account registration | `GET /register` | `user.register.view` | `CandidateWebController@showUserRegisterForm` | `resources/views/auth/register.blade.php` | Guest | `$candidateType` | Candidate account registration. | Functional | Creates `users` account and sends OTP on POST. Does not create a `candidates` row. |
+| Login | `GET /login` | `login` | `AuthWebController@showLoginForm` | `resources/views/auth/login.blade.php` | Guest | none | Login page for all roles. | Functional | `POST /login` authenticates and redirects by role. Also includes “Masuk dengan Google” linking to Google OAuth. |
+| Account registration | `GET /register` | `user.register.view` | `CandidateWebController@showUserRegisterForm` | `resources/views/auth/register.blade.php` | Guest | `$candidateType` | Candidate account registration. | Functional | Creates `users` account and sends OTP on POST. Also includes “Daftar dengan Google”; Google-verified email skips OTP. Does not create a `candidates` row. |
+| Google OAuth redirect | `GET /auth/google` | `auth.google.redirect` | `GoogleAuthController@redirect` | none | Public/guest entry | optional `candidate_type` query | Starts Google OAuth login/register. | Functional | Stores intended candidate type in session if provided. |
+| Google OAuth callback | `GET /auth/google/callback` | `auth.google.callback` | `GoogleAuthController@callback` | none | Google callback | none | Links or creates a user from a verified Google account. | Functional | Requires Google `email_verified`; creates/links `users`, logs in via session, redirects by role/candidate state. |
 
 ## Authenticated Common Pages
 
@@ -49,6 +51,10 @@ This document covers Blade-rendered web pages only: page purpose, route/view map
 Current web candidate flow:
 
 `account register -> OTP verify -> identity form -> candidate dashboard -> apply -> preferences -> experience -> skills/facilities -> documents -> signatures -> schedule`
+
+Google OAuth variant:
+
+`Google verified email -> identity form -> candidate dashboard -> apply -> preferences -> experience -> skills/facilities -> documents -> signatures -> schedule`
 
 Identity fields are currently stored on `users`, not `candidates`: `name`, `nickname`, `nim`, `prodi`, `kelas`, `phone`, `address`.
 

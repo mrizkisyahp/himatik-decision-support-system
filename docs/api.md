@@ -1,6 +1,6 @@
 # API Documentation
 
-Last reviewed: 2026-06-07
+Last reviewed: 2026-06-08
 
 Base path: `/api`
 
@@ -22,6 +22,7 @@ This document covers API endpoints only: method, endpoint, controller/action, mi
 - Roles are stored in `users.role`: `admin`, `interviewer`, `candidate`.
 - Candidate identity fields currently live on `users`: `name`, `nickname`, `nim`, `prodi`, `kelas`, `phone`, `address`.
 - Candidate application/profile fields live on `candidates` and child tables.
+- Google OAuth fields live on `users`: `google_id`, `auth_provider`, `avatar_url`.
 
 ## Public API Routes
 
@@ -31,6 +32,7 @@ This document covers API endpoints only: method, endpoint, controller/action, mi
 | GET | `/api/departments` | `CandidateApiController@getDepartments` | none | none | `success`, `data[]` with `id`, `name`, `slug`, `description` | `Departmentsbiro` | Functional | Active departments only. |
 | POST | `/api/register` | `CandidateApiController@register` | none | `email`: required email unique users; `nama`: required string; `password`: required min 8 confirmed; `password_confirmation`: required | `201 success`, Sanctum `token`, `user`, `next_step: verify_email` | `User`, `CandidateOtpService`, `EmailVerificationOtp` | Functional | Account-only registration. Does not create a candidate profile row. |
 | POST | `/api/login` | `AuthApiController@login` | none | `email`: required email; `password`: required string | `success`, `token`, `user`, `candidate`, `next_step` | `User`, `Candidate` | Functional | `next_step` is role-aware; non-candidates get `dashboard`. |
+| POST | `/api/auth/google` | `GoogleAuthController@login` | none | `id_token`: required Google ID token from mobile client | `success`, Sanctum `token`, `user`, `candidate`, `next_step` | `User`, `GoogleAuthService`, Google tokeninfo API | Functional | Verifies token server-side and requires Google `email_verified`. Creates/links `users` only; does not create a `candidates` row. |
 | GET | `/api/announcements` | `PublicAnnouncementApiController@getAcceptedList` | none | none | Public announcement payload | `Announcement`, `Candidate`, `Departmentsbiro` | Functional | Public output does not expose score details. |
 
 ## Protected Common API Routes
@@ -57,6 +59,15 @@ Candidate profile validation highlights:
 - `second_choice_id` is nullable and must differ from `first_choice_id`.
 - Required files: `photo`, `instagram_proof`, `youtube_proof`, `political_statement`, `candidate_signature`, `parent_signature`.
 - Repeatable arrays: `educations`, `organizations`, `committees`, `skills`, `facilities`.
+
+### Google OAuth API Notes
+
+- Mobile clients should obtain a Google ID token, then call `POST /api/auth/google`.
+- The backend verifies the token with Google and checks the configured `GOOGLE_CLIENT_ID` audience when present.
+- Google OAuth skips local email OTP only when Google reports `email_verified = true`.
+- Existing local users are linked by matching email; duplicate users are not created for the same email.
+- New Google users are created as `role = candidate`, with `email_verified_at` set immediately.
+- `next_step` follows existing values: `candidate_registration`, `schedule_selection`, `candidate_status`, or `dashboard`.
 
 ## Protected Interviewer API Routes
 

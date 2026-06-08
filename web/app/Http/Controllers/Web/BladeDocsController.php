@@ -50,7 +50,7 @@ class BladeDocsController extends Controller
                     view: 'auth/login.blade.php',
                     controller: 'Web\AuthWebController',
                     action: 'showLoginForm',
-                    description: 'Minimal login page for all roles. Role redirects are handled after authentication.',
+                    description: 'Minimal login page for all roles. Role redirects are handled after authentication. Includes Google OAuth login.',
                     models: ['User'],
                     postFields: [
                         ['email', 'string', 'required|email', 'Registered email.'],
@@ -66,7 +66,7 @@ class BladeDocsController extends Controller
                     view: 'auth/register.blade.php',
                     controller: 'Web\CandidateWebController',
                     action: 'showUserRegisterForm',
-                    description: 'Candidate account registration step. Creates user account and sends OTP, but does not create a candidate profile yet.',
+                    description: 'Candidate account registration step. Creates user account and sends OTP, but does not create a candidate profile yet. Includes Google OAuth registration.',
                     variables: [
                         ['$candidateType', 'string|null', 'Optional candidate type query value carried from landing CTA.'],
                     ],
@@ -78,6 +78,32 @@ class BladeDocsController extends Controller
                         ['candidate_type', 'string|null', 'nullable|in:staff,bph', 'Optional type forwarded to later candidate profile step.'],
                     ],
                     postRoute: 'POST /register -> CandidateWebController@registerUser'
+                ),
+                $this->route(
+                    id: 'google-oauth-redirect',
+                    uri: '/auth/google',
+                    name: 'auth.google.redirect',
+                    middleware: ['public'],
+                    view: '',
+                    controller: 'Web\GoogleAuthController',
+                    action: 'redirect',
+                    description: 'Starts Google OAuth login/register and stores optional candidate_type in session.',
+                    variables: [
+                        ['candidate_type', 'query string|null', 'Optional staff/bph value forwarded from register CTA.'],
+                    ],
+                    models: ['User'],
+                ),
+                $this->route(
+                    id: 'google-oauth-callback',
+                    uri: '/auth/google/callback',
+                    name: 'auth.google.callback',
+                    middleware: ['public'],
+                    view: '',
+                    controller: 'Web\GoogleAuthController',
+                    action: 'callback',
+                    description: 'Handles Google callback, requires verified Google email, links/creates users, logs in, then redirects by role/candidate state.',
+                    models: ['User'],
+                    services: ['GoogleAuthService', 'Laravel Socialite']
                 ),
             ],
             'Candidate (auth)' => [

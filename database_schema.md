@@ -23,6 +23,9 @@ Stores all authenticated accounts: admin, interviewer, and candidate.
 | name | string | Required |
 | email | string | Unique |
 | email_verified_at | timestamp nullable | Email verification timestamp |
+| google_id | string nullable | Unique Google account ID for linked Google OAuth accounts |
+| auth_provider | string | Default `local`; set to `google` for Google-linked accounts |
+| avatar_url | string nullable | Google profile avatar URL |
 | password | string | Hashed password |
 | nim | string(10) nullable | Unique |
 | nickname | string nullable | Candidate nickname |

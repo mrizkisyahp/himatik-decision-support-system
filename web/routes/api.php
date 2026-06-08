@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AdminApiController;
 use App\Http\Controllers\Api\AuthApiController;
 use App\Http\Controllers\Api\CandidateApiController;
 use App\Http\Controllers\Api\ChatbotController;
+use App\Http\Controllers\Api\GoogleAuthController;
 use App\Http\Controllers\Api\InterviewerApiController;
 use App\Http\Controllers\Api\LandingApiController;
 use App\Http\Controllers\Api\PublicAnnouncementApiController;
@@ -13,6 +14,7 @@ Route::get('/landing', [LandingApiController::class, 'index']);
 Route::get('/departments', [CandidateApiController::class, 'getDepartments']);
 Route::post('/register', [CandidateApiController::class, 'register']);
 Route::post('/login', [AuthApiController::class, 'login']);
+Route::post('/auth/google', [GoogleAuthController::class, 'login']);
 Route::get('/announcements', [PublicAnnouncementApiController::class, 'getAcceptedList']);
 Route::post('/chatbot', [ChatbotController::class, 'public'])->middleware('throttle:10,1');
 

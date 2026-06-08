@@ -4,6 +4,7 @@ use App\Http\Controllers\Web\AdminWebController;
 use App\Http\Controllers\Web\AuthWebController;
 use App\Http\Controllers\Web\BladeDocsController;
 use App\Http\Controllers\Web\CandidateWebController;
+use App\Http\Controllers\Web\GoogleAuthController;
 use App\Http\Controllers\Web\InterviewerWebController;
 use App\Http\Controllers\Web\LandingWebController;
 use App\Http\Controllers\Web\PublicAnnouncementController;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [LandingWebController::class, 'index'])->name('landing');
 Route::get('/announcements', [PublicAnnouncementController::class, 'showAcceptedList'])->name('public.announcements');
 Route::get('/docs/blade', [BladeDocsController::class, 'index'])->name('docs.blade');
+Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google.redirect');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthWebController::class, 'showLoginForm'])->name('login');
