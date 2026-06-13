@@ -2,6 +2,8 @@
 <html lang="id">
 
 <head>
+    <link rel="icon" href="{{ asset('images/Logo_HIMATIK-DIC1vDRy.png') }}" type="image/png">
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title ?? 'Admin HIMATIK PNJ' }}</title>
@@ -34,6 +36,7 @@
                 'label' => 'Decision Support',
                 'items' => [
                     ['label' => 'Profile Matching', 'route' => 'admin.profile-matching'],
+                    ['label' => 'Rankings', 'route' => 'admin.rankings'],
                     ['label' => 'Default Criteria', 'route' => 'admin.default-criteria'],
                 ],
             ],
@@ -83,7 +86,10 @@
                                             $active = request()->routeIs('admin.departments*');
                                         }
                                         if ($item['route'] === 'admin.profile-matching') {
-                                            $active = request()->routeIs('admin.profile-matching') || request()->routeIs('admin.criteria*');
+                                            $active = request()->routeIs('admin.profile-matching') || request()->routeIs('admin.profile-matching.*') || request()->routeIs('admin.criteria*');
+                                        }
+                                        if ($item['route'] === 'admin.rankings') {
+                                            $active = request()->routeIs('admin.rankings');
                                         }
                                     @endphp
                                     <a href="{{ route($item['route']) }}" class="flex items-center justify-between rounded-2xl px-3 py-3 text-sm font-bold transition {{ $active ? 'bg-[#223872] text-white shadow-lg shadow-[#223872]/20' : 'text-[#64748b] hover:bg-[#F4F7FF] hover:text-[#223872]' }}">

@@ -2,6 +2,8 @@
 <html lang="id">
 
 <head>
+    <link rel="icon" href="{{ asset('images/Logo_HIMATIK-DIC1vDRy.png') }}" type="image/png">
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title ?? 'Interviewer HIMATIK PNJ' }}</title>
@@ -68,7 +70,12 @@
 
                             <div class="space-y-1">
                                 @foreach ($group['items'] as $item)
-                                    @php $active = request()->routeIs($item['route']); @endphp
+                                    @php
+                                        $active = request()->routeIs($item['route']);
+                                        if ($item['route'] === 'interviewer.profile-matching') {
+                                            $active = request()->routeIs('interviewer.profile-matching') || request()->routeIs('interviewer.profile-matching.*');
+                                        }
+                                    @endphp
                                     <a href="{{ route($item['route']) }}" class="flex items-center justify-between rounded-2xl px-3 py-3 text-sm font-bold transition {{ $active ? 'bg-[#223872] text-white shadow-lg shadow-[#223872]/20' : 'text-[#64748b] hover:bg-[#F4F7FF] hover:text-[#223872]' }}">
                                         <span>{{ $item['label'] }}</span>
                                         @if ($active)

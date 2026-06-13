@@ -82,6 +82,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/interviewer/schedules', [InterviewerWebController::class, 'schedules'])->name('interviewer.schedules');
         Route::patch('/interviewer/schedules/{schedule}/toggle-block', [InterviewerWebController::class, 'toggleScheduleBlock'])->name('interviewer.schedules.toggle-block');
         Route::get('/interviewer/profile-matching', [InterviewerWebController::class, 'profileMatching'])->name('interviewer.profile-matching');
+        Route::get('/interviewer/profile-matching/{candidate}/calculation', [InterviewerWebController::class, 'profileMatchingCalculation'])->name('interviewer.profile-matching.calculation');
         Route::get('/interviewer/grade/{candidate}/{department}', [InterviewerWebController::class, 'showGradingForm'])->name('interviewer.grade.view');
         Route::post('/interviewer/grade/{candidate}/{department}', [InterviewerWebController::class, 'submitScores'])->name('interviewer.grade.post');
         Route::delete('/interviewer/profile-matching/scores/{candidate}/{department}', [InterviewerWebController::class, 'profileMatchingResetScores'])->name('interviewer.profile-matching.reset');
@@ -107,8 +108,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/admin/open-recruitment/{openRecruitment}/extend', [AdminWebController::class, 'extendOpenRecruitment'])->name('admin.open-recruitment.extend');
         Route::get('/admin/pengumuman', [AdminWebController::class, 'announcements'])->name('admin.announcements');
         Route::get('/admin/profile-matching', [AdminWebController::class, 'profileMatching'])->name('admin.profile-matching');
+        Route::get('/admin/rankings', [AdminWebController::class, 'rankings'])->name('admin.rankings');
         Route::post('/admin/profile-matching/scores/{candidate}/{department}', [AdminWebController::class, 'profileMatchingSaveScores'])->name('admin.profile-matching.save');
         Route::delete('/admin/profile-matching/scores/{candidate}/{department}', [AdminWebController::class, 'profileMatchingResetScores'])->name('admin.profile-matching.reset');
+        Route::get('/admin/profile-matching/{department}/{candidate}/calculation', [AdminWebController::class, 'profileMatchingCalculation'])->name('admin.profile-matching.calculation');
         Route::get('/admin/default-criteria', [AdminWebController::class, 'defaultCriteria'])->name('admin.default-criteria');
         Route::post('/admin/default-criteria', [AdminWebController::class, 'storeDefaultCriterion'])->name('admin.default-criteria.post');
         Route::put('/admin/default-criteria/{criterion}', [AdminWebController::class, 'updateDefaultCriterion'])->name('admin.default-criteria.update');

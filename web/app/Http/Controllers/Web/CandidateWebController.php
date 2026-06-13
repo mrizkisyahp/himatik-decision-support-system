@@ -343,6 +343,13 @@ class CandidateWebController extends Controller
         if ($firstChoiceDepartmentId) {
             $schedulesRaw = InterviewSchedule::with('booking')
                 ->where('department_id', $firstChoiceDepartmentId)
+                ->where(function ($query) {
+                    $query->where('date', '>', now()->toDateString())
+                          ->orWhere(function ($q) {
+                              $q->where('date', '=', now()->toDateString())
+                                ->where('start_time', '>', now()->toTimeString());
+                          });
+                })
                 ->orderBy('date')
                 ->orderBy('start_time')
                 ->get();
@@ -389,6 +396,13 @@ class CandidateWebController extends Controller
 
         $firstChoiceDepartmentId = $candidate->first_choice_department?->id;
         $newSlot = InterviewSchedule::where('is_blocked', false)->findOrFail($request->schedule_id);
+
+        $slotDate = is_string($newSlot->date) ? $newSlot->date : $newSlot->date->format('Y-m-d');
+        $slotDateTime = \Carbon\Carbon::parse($slotDate . ' ' . $newSlot->start_time);
+        
+        if ($slotDateTime->isPast()) {
+            return back()->with('error', 'You cannot book a schedule slot that has already passed.');
+        }
 
         if ($newSlot->department_id !== $firstChoiceDepartmentId) {
             return back()->with('error', 'You can only book a schedule from your first-choice department.');

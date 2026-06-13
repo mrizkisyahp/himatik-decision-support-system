@@ -9,6 +9,7 @@ use App\Models\EvaluationCriteria;
 use App\Models\Evaluation;
 use App\Models\Announcement;
 use App\Models\DefaultEvaluationCriteria;
+use App\Models\SpkResult;
 use App\Services\ProfileMatchingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -164,6 +165,59 @@ class InterviewerWebController extends Controller
             'existingScores',
             'error',
             'search'
+        ));
+    }
+
+    public function profileMatchingCalculation(Candidate $candidate)
+    {
+        $department = $this->getDepartment();
+        $candidate->loadMissing(['user', 'departmentChoices.department']);
+
+        $belongsToDepartment = $candidate->departmentChoices()
+            ->where('departmentsbiro_id', $department->id)
+            ->exists();
+
+        if (! $belongsToDepartment) {
+            abort(404);
+        }
+
+        $spkResult = SpkResult::where('candidate_id', $candidate->id)
+            ->where('department_id', $department->id)
+            ->first();
+
+        if (! $spkResult) {
+            $this->dss->calculateScore($candidate, $department, Auth::id());
+
+            $spkResult = SpkResult::where('candidate_id', $candidate->id)
+                ->where('department_id', $department->id)
+                ->first();
+        }
+
+        $details = $spkResult?->calculation_details ?? [];
+        $breakdown = collect(data_get($details, 'breakdown', []));
+        $weights = data_get($details, 'weights', []);
+        $gapWeights = collect(data_get($details, 'gap_weights', []));
+
+        $groupedBreakdown = [
+            'personal' => [
+                'core' => $breakdown->where('aspect', 'personal')->where('criteria_type', 'core')->values(),
+                'secondary' => $breakdown->where('aspect', 'personal')->where('criteria_type', 'secondary')->values(),
+            ],
+            'organizational' => [
+                'core' => $breakdown->where('aspect', 'organizational')->where('criteria_type', 'core')->values(),
+                'secondary' => $breakdown->where('aspect', 'organizational')->where('criteria_type', 'secondary')->values(),
+            ],
+        ];
+
+        return view('interviewer.profile-matching-calculation', compact(
+            'candidate',
+            'department',
+            'spkResult',
+            'details',
+            'breakdown',
+            'weights',
+            'gapWeights',
+            'groupedBreakdown'
         ));
     }
 

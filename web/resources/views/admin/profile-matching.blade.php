@@ -166,7 +166,11 @@
                                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                             Pilih nilai 1-5. Kosongkan jika belum dinilai.
                                         </div>
-                                        <div class="flex gap-3">
+                                        <div class="flex flex-wrap gap-3">
+                                            <a href="{{ route('admin.profile-matching.calculation', [$selectedDepartment->id, $candidate->id]) }}"
+                                               class="rounded-xl border border-[#D8E2F3] bg-white px-4 py-2 text-sm font-bold text-[#223872] transition hover:border-[#4A90E2] hover:text-[#1b2f60]">
+                                                Lihat Detail Hitung
+                                            </a>
                                             @if($filled > 0)
                                                 <button type="button" onclick="if(confirm('Hapus semua skor untuk kandidat ini?')) document.getElementById('reset-form-{{ $candidate->id }}').submit();" class="rounded-xl px-4 py-2 text-sm font-bold text-red-600 transition hover:bg-red-50">Reset Skor</button>
                                             @endif
@@ -258,6 +262,11 @@
                                     </td>
                                     <td class="px-6 py-4 text-center">
                                         @php $ann = $r['candidate']->announcement; @endphp
+                                        <div class="flex flex-col items-center gap-2">
+                                        <a href="{{ route('admin.profile-matching.calculation', [$selectedDepartment->id, $r['candidate']->id]) }}"
+                                           class="rounded-lg border border-[#D8E2F3] bg-white px-3 py-1.5 text-[10px] font-bold text-[#223872] transition hover:border-[#4A90E2] hover:text-[#1b2f60]">
+                                            Detail Hitung
+                                        </a>
                                         @if($ann)
                                             @if($ann->status === 'accepted')
                                                 <div class="flex flex-col items-center gap-2">
@@ -304,6 +313,7 @@
                                                 </form>
                                             </div>
                                         @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach

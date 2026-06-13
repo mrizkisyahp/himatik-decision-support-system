@@ -20,6 +20,7 @@ use App\Models\User;
 use App\Services\OpenRecruitmentService;
 use App\Services\ProfileMatchingService;
 use App\Support\SpkCriteriaDefaults;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -129,13 +130,15 @@ class AdminWebController extends Controller
             ['label' => 'Sesi Interview', 'description' => 'Jadwal wawancara', 'route' => 'admin.schedules'],
             ['label' => 'Pengumuman', 'description' => 'Publikasi hasil', 'route' => 'admin.announcements'],
             ['label' => 'Profile Matching', 'description' => 'SPK dan ranking', 'route' => 'admin.profile-matching'],
-        ])->filter(fn ($action) => Route::has($action['route']))->values();
+        ])->filter(fn($action) => Route::has($action['route']))->values();
 
-        $todaySchedules = \App\Models\InterviewSchedule::whereDate('date', today())
+        $todaySchedulesQuery = \App\Models\InterviewSchedule::whereDate('date', today())
             ->whereHas('booking')
             ->with(['booking.candidate.user', 'department'])
-            ->orderBy('start_time')
-            ->get();
+            ->orderBy('start_time');
+
+        $totalTodaySchedules = (clone $todaySchedulesQuery)->count();
+        $todaySchedules = $todaySchedulesQuery->paginate(5, ['*'], 'timeline_page');
 
         $topCandidates = \App\Models\Candidate::whereHas('evaluations')
             ->with('user')
@@ -155,6 +158,7 @@ class AdminWebController extends Controller
             'openRecruitment',
             'quickActions',
             'todaySchedules',
+            'totalTodaySchedules',
             'topCandidates'
         ));
     }
@@ -673,7 +677,7 @@ class AdminWebController extends Controller
     {
         $criteria = $department->evaluationCriteria()->orderBy('sort_order')->orderBy('id')->get();
         $defaultCriteria = DefaultEvaluationCriteria::orderBy('sort_order')->orderBy('id')->get();
-        
+
         // Check if dirty
         $isDirty = false;
         if ($criteria->count() !== $defaultCriteria->count()) {
@@ -748,7 +752,7 @@ class AdminWebController extends Controller
     {
         // Hard delete all existing criteria
         $department->evaluationCriteria()->delete();
-        
+
         // Copy from DefaultEvaluationCriteria
         DefaultEvaluationCriteria::where('is_active', true)->orderBy('sort_order')->orderBy('id')->get()
             ->each(function (DefaultEvaluationCriteria $default) use ($department) {
@@ -776,26 +780,29 @@ class AdminWebController extends Controller
     public function listSchedules(Request $request)
     {
         $departments = Departmentsbiro::where('is_active', true)->orderBy('name')->get();
-        
+
         // Active tab defaults to first department
         $activeDepartmentId = $request->query('department_id', $departments->first()?->id);
 
         $schedules = [];
         $dates = [];
         $timeSlots = [];
-        
+
         if ($activeDepartmentId) {
-            $schedulesRaw = InterviewSchedule::with(['booking.candidate.user', 'booking.candidate.evaluations' => function($q) use ($activeDepartmentId) {
-                $q->where('department_id', $activeDepartmentId);
-            }])
-            ->where('department_id', $activeDepartmentId)
-            ->orderBy('date')
-            ->orderBy('start_time')
-            ->get();
-            
+            $schedulesRaw = InterviewSchedule::with([
+                'booking.candidate.user',
+                'booking.candidate.evaluations' => function ($q) use ($activeDepartmentId) {
+                    $q->where('department_id', $activeDepartmentId);
+                }
+            ])
+                ->where('department_id', $activeDepartmentId)
+                ->orderBy('date')
+                ->orderBy('start_time')
+                ->get();
+
             // Build the matrix bounds
             $dates = $schedulesRaw->pluck('date')->unique()->values();
-            $timeSlotsRaw = $schedulesRaw->map(function($s) {
+            $timeSlotsRaw = $schedulesRaw->map(function ($s) {
                 return $s->start_time . '|' . $s->end_time;
             })->unique()->values();
 
@@ -804,7 +811,7 @@ class AdminWebController extends Controller
                 [$start, $end] = explode('|', $ts);
                 $timeSlots[] = ['start_time' => $start, 'end_time' => $end];
             }
-            
+
             // Sort time slots by start_time
             usort($timeSlots, fn($a, $b) => strcmp($a['start_time'], $b['start_time']));
 
@@ -836,7 +843,7 @@ class AdminWebController extends Controller
 
         $startDate = \Carbon\Carbon::parse($request->start_date);
         $endDate = \Carbon\Carbon::parse($request->end_date);
-        
+
         // Parse time slots
         $slotStrings = array_filter(array_map('trim', explode(',', $request->time_slots)));
         $parsedSlots = [];
@@ -862,7 +869,7 @@ class AdminWebController extends Controller
         }
 
         $inserts = [];
-        
+
         foreach ($targetDepartmentIds as $deptId) {
             $currentDate = $startDate->copy();
             while ($currentDate->lte($endDate)) {
@@ -873,7 +880,7 @@ class AdminWebController extends Controller
                         ->where('start_time', $slot['start_time'])
                         ->where('end_time', $slot['end_time'])
                         ->exists();
-                        
+
                     if (!$exists) {
                         $inserts[] = [
                             'department_id' => $deptId,
@@ -904,7 +911,7 @@ class AdminWebController extends Controller
     {
         $schedule->is_blocked = !$schedule->is_blocked;
         $schedule->save();
-        
+
         return response()->json([
             'success' => true,
             'is_blocked' => $schedule->is_blocked
@@ -917,7 +924,7 @@ class AdminWebController extends Controller
             'department_id' => 'nullable|exists:departmentsbiro,id',
             'all_departments' => 'nullable|boolean',
         ]);
-        
+
         $query = InterviewSchedule::doesntHave('booking');
 
         if ($request->boolean('all_departments')) {
@@ -929,7 +936,7 @@ class AdminWebController extends Controller
         }
 
         $deleted = $query->delete();
-            
+
         return back()
             ->with('success', "Berhasil menghapus {$deleted} slot jadwal yang kosong.");
     }
@@ -943,12 +950,12 @@ class AdminWebController extends Controller
 
         if ($request->status === 'accepted') {
             $departmentId = $request->assigned_department_id;
-            
+
             // Get active open recruitment for this candidate type
             $openRecruitment = OpenRecruitment::where('candidate_type', $candidate->candidate_type)
                 ->where('status', 'open')
                 ->first();
-                
+
             if ($openRecruitment) {
                 $quotaRecord = OpenRecruitmentQuota::where('candidate_type', $candidate->candidate_type)
                     ->where('department_id', $departmentId)
@@ -997,7 +1004,7 @@ class AdminWebController extends Controller
         if ($search) {
             $query->whereHas('candidate.user', function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('nim', 'like', "%{$search}%");
+                    ->orWhere('nim', 'like', "%{$search}%");
             });
         }
 
@@ -1067,7 +1074,7 @@ class AdminWebController extends Controller
                         $candidatesQuery->where(function ($q) use ($search) {
                             $q->whereHas('user', function ($uq) use ($search) {
                                 $uq->where('name', 'like', '%' . $search . '%')
-                                   ->orWhere('nim', 'like', '%' . $search . '%');
+                                    ->orWhere('nim', 'like', '%' . $search . '%');
                             });
                         });
                     }
@@ -1105,6 +1112,126 @@ class AdminWebController extends Controller
         ));
     }
 
+    public function rankings(Request $request)
+    {
+        $mode = $request->get('mode', 'department');
+        if (!in_array($mode, ['department', 'all'], true)) {
+            $mode = 'department';
+        }
+
+        $departments = Departmentsbiro::where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        $departmentRankings = collect();
+
+        if ($mode === 'department') {
+            $grouped = $departments->map(function (Departmentsbiro $department) use ($request) {
+                $rankings = collect($this->dss->getDepartmentRankings($department))->values();
+                $pageName = 'dept_page_' . $department->id;
+                $currentPage = max((int) $request->get($pageName, 1), 1);
+                $perPage = 5;
+
+                $paginator = new LengthAwarePaginator(
+                    $rankings->forPage($currentPage, $perPage)->values(),
+                    $rankings->count(),
+                    $perPage,
+                    $currentPage,
+                    [
+                        'path' => route('admin.rankings'),
+                        'pageName' => $pageName,
+                    ]
+                );
+
+                $query = $request->query();
+                unset($query[$pageName]);
+                $paginator->appends(array_merge($query, ['mode' => 'department']));
+
+                return [
+                    'department' => $department,
+                    'rankings' => $paginator,
+                ];
+            })->filter(fn ($item) => $item['rankings']->isNotEmpty())->values();
+
+            $departmentRankings = $grouped;
+        }
+
+        $allRankings = new LengthAwarePaginator([], 0, 15);
+
+        if ($mode === 'all') {
+            $allRankings = SpkResult::with([
+                    'candidate.user',
+                    'candidate.announcement',
+                    'department',
+                ])
+                ->whereHas('department', fn ($query) => $query->where('is_active', true))
+                ->orderByDesc('final_score')
+                ->orderBy('department_id')
+                ->orderBy('candidate_id')
+                ->paginate(15, ['*'], 'all_page')
+                ->appends(['mode' => 'all']);
+        }
+
+        return view('admin.rankings', compact(
+            'mode',
+            'departments',
+            'departmentRankings',
+            'allRankings'
+        ));
+    }
+
+    public function profileMatchingCalculation(Departmentsbiro $department, Candidate $candidate)
+    {
+        $candidate->loadMissing(['user', 'departmentChoices.department']);
+
+        $belongsToDepartment = $candidate->departmentChoices()
+            ->where('departmentsbiro_id', $department->id)
+            ->exists();
+
+        if (!$belongsToDepartment) {
+            abort(404);
+        }
+
+        $spkResult = SpkResult::where('candidate_id', $candidate->id)
+            ->where('department_id', $department->id)
+            ->first();
+
+        if (!$spkResult) {
+            $this->dss->calculateScore($candidate, $department, Auth::id());
+
+            $spkResult = SpkResult::where('candidate_id', $candidate->id)
+                ->where('department_id', $department->id)
+                ->first();
+        }
+
+        $details = $spkResult?->calculation_details ?? [];
+        $breakdown = collect(data_get($details, 'breakdown', []));
+        $weights = data_get($details, 'weights', []);
+        $gapWeights = collect(data_get($details, 'gap_weights', []));
+
+        $groupedBreakdown = [
+            'personal' => [
+                'core' => $breakdown->where('aspect', 'personal')->where('criteria_type', 'core')->values(),
+                'secondary' => $breakdown->where('aspect', 'personal')->where('criteria_type', 'secondary')->values(),
+            ],
+            'organizational' => [
+                'core' => $breakdown->where('aspect', 'organizational')->where('criteria_type', 'core')->values(),
+                'secondary' => $breakdown->where('aspect', 'organizational')->where('criteria_type', 'secondary')->values(),
+            ],
+        ];
+
+        return view('admin.profile-matching-calculation', compact(
+            'candidate',
+            'department',
+            'spkResult',
+            'details',
+            'breakdown',
+            'weights',
+            'gapWeights',
+            'groupedBreakdown'
+        ));
+    }
+
     public function profileMatchingSaveScores(Request $request, Candidate $candidate, Departmentsbiro $department)
     {
         $request->validate([
@@ -1120,7 +1247,8 @@ class AdminWebController extends Controller
                 $criteriaExists = EvaluationCriteria::where('id', $criteriaId)
                     ->where('department_id', $department->id)
                     ->exists();
-                if (!$criteriaExists) continue;
+                if (!$criteriaExists)
+                    continue;
 
                 $evaluation = Evaluation::firstOrNew([
                     'candidate_id' => $candidate->id,

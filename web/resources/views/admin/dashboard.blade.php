@@ -285,13 +285,13 @@
                         <div class="flex items-center justify-between">
                             <h3 class="font-black text-[#0F172A] text-lg">Timeline Hari Ini</h3>
                             <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[0.65rem] font-bold bg-[#F1F5F9] text-[#475569] uppercase tracking-wider">
-                                {{ count($todaySchedules) }} Sesi
+                                {{ $totalTodaySchedules }} Sesi
                             </span>
                         </div>
                     </div>
                     
                     <div class="flex-1 p-7">
-                        @if(count($todaySchedules) > 0)
+                        @if($todaySchedules->count() > 0)
                             <div class="relative border-l-2 border-[#F1F5F9] ml-3 space-y-8 py-2">
                                 @foreach($todaySchedules as $index => $sch)
                                     <div class="relative pl-6">
@@ -306,12 +306,8 @@
                                                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                                                     {{ $sch->department->name ?? '-' }}
                                                 </div>
-                                                <div class="flex items-center gap-2 text-xs font-medium text-[#64748B]">
-                                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                                    Ruang {{ $sch->location ?? 'TBD' }}
-                                                </div>
                                                 <div class="mt-4 pt-4 border-t border-[#F8FAFC] flex items-center justify-between">
-                                                    <span class="text-[0.65rem] font-bold text-[#94A3B8] uppercase">Sesi {{ $index + 1 }}</span>
+                                                    <span class="text-[0.65rem] font-bold text-[#94A3B8] uppercase">Sesi {{ ($todaySchedules->firstItem() ?? 1) + $index }}</span>
                                                     <a href="{{ route('admin.schedules') }}" class="inline-flex items-center gap-1 text-[0.65rem] font-bold text-[#475569] bg-[#F1F5F9] px-3 py-1.5 rounded-lg hover:bg-[#E2E8F0] transition-colors uppercase tracking-wider">
                                                         Detail
                                                     </a>
@@ -321,6 +317,54 @@
                                     </div>
                                 @endforeach
                             </div>
+                            @if($todaySchedules->hasPages())
+                                <div class="mt-6 flex flex-col gap-3 border-t border-[#F1F5F9] pt-4">
+                                    <p class="text-[0.7rem] font-medium text-[#64748B]">
+                                        Menampilkan {{ $todaySchedules->firstItem() }}-{{ $todaySchedules->lastItem() }} dari {{ $todaySchedules->total() }} sesi
+                                    </p>
+                                    <div class="flex items-center justify-center gap-1">
+                                        @if($todaySchedules->onFirstPage())
+                                            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] text-[#CBD5E1]">
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                                </svg>
+                                            </span>
+                                        @else
+                                            <a href="{{ $todaySchedules->previousPageUrl() }}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#D8E2F3] bg-white text-[#475569] transition hover:border-[#4A90E2] hover:text-[#223872]">
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                                </svg>
+                                            </a>
+                                        @endif
+
+                                        @foreach($todaySchedules->getUrlRange(1, $todaySchedules->lastPage()) as $page => $url)
+                                            @if($page === $todaySchedules->currentPage())
+                                                <span class="inline-flex h-8 min-w-[2rem] items-center justify-center rounded-lg bg-[#223872] px-2 text-xs font-black text-white">
+                                                    {{ $page }}
+                                                </span>
+                                            @else
+                                                <a href="{{ $url }}" class="inline-flex h-8 min-w-[2rem] items-center justify-center rounded-lg border border-[#D8E2F3] bg-white px-2 text-xs font-black text-[#475569] transition hover:border-[#4A90E2] hover:text-[#223872]">
+                                                    {{ $page }}
+                                                </a>
+                                            @endif
+                                        @endforeach
+
+                                        @if($todaySchedules->hasMorePages())
+                                            <a href="{{ $todaySchedules->nextPageUrl() }}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#D8E2F3] bg-white text-[#475569] transition hover:border-[#4A90E2] hover:text-[#223872]">
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            </a>
+                                        @else
+                                            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] text-[#CBD5E1]">
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endif
                         @else
                             <div class="py-12 flex flex-col items-center text-center">
                                 <div class="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-2xl mb-4 shadow-sm">
@@ -330,45 +374,6 @@
                                 <p class="text-xs font-medium text-[#64748B] mt-1.5 max-w-[200px]">Belum ada kandidat yang dijadwalkan wawancara hari ini.</p>
                             </div>
                         @endif
-                    </div>
-
-                    <div class="px-7 py-5 border-t border-b border-[#F1F5F9]">
-                        <div class="flex items-center justify-between">
-                            <h3 class="font-black text-[#0F172A] text-lg">Top 3 Kandidat</h3>
-                            <a href="{{ route('admin.profile-matching') }}" class="text-[0.65rem] font-bold text-blue-600 hover:text-blue-800 transition-colors uppercase tracking-wider">Lihat Semua</a>
-                        </div>
-                    </div>
-                    
-                    <div class="p-7">
-                        <div class="space-y-3">
-                            @forelse($topCandidates as $idx => $cand)
-                                @php $isTop = $idx === 0; @endphp
-                                <div class="relative flex items-center justify-between group p-3.5 rounded-2xl hover:bg-[#F8FAFC] transition-colors border border-transparent hover:border-[#E2E8F0]">
-                                    <div class="flex items-center gap-4">
-                                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl font-black text-sm
-                                            {{ $isTop ? 'bg-[#FFFBEB] text-[#D97706] ring-1 ring-[#FEF3C7]' : 
-                                            ($idx === 1 ? 'bg-[#F1F5F9] text-[#475569] ring-1 ring-[#E2E8F0]' : 
-                                            ($idx === 2 ? 'bg-[#FFEDD5] text-[#C2410C] ring-1 ring-[#FFEDD5]' : 
-                                            'bg-[#F8FAFC] text-[#94A3B8]')) }}">
-                                            #{{ $idx + 1 }}
-                                        </div>
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-bold truncate max-w-[120px] text-[#0F172A]" title="{{ $cand->user->name }}">{{ $cand->user->name }}</p>
-                                            <p class="text-[0.65rem] font-bold uppercase tracking-wider mt-0.5 text-[#64748B]">Skor Total</p>
-                                        </div>
-                                    </div>
-                                    <div class="text-right">
-                                        <span class="text-lg font-black text-[#0F172A]">{{ number_format($cand->total_score ?? 0, 2, ',', '.') }}</span>
-                                    </div>
-                                    <a href="{{ route('admin.profile-matching') }}" class="absolute inset-0 z-10" aria-label="Lihat Profil"></a>
-                                </div>
-                            @empty
-                                <div class="py-8 flex flex-col items-center text-center">
-                                    <p class="text-sm font-black text-[#0F172A]">Belum ada penilaian</p>
-                                    <p class="text-xs font-medium text-[#64748B] mt-1.5">Sistem belum memproses skor evaluasi.</p>
-                                </div>
-                            @endforelse
-                        </div>
                     </div>
                 </div>
             </div>
